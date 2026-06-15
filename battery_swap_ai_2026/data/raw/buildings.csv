@@ -1,0 +1,21 @@
+building_id,building_name,latitude,longitude,building_type
+B001,Oslo Sentrum,59.954791,10.731664,hospital
+B002,Oslo Øst,59.939474,10.628253,warehouse
+B003,Oslo Vest,59.995124,10.828342,warehouse
+B004,Oslo Nord,59.825623,10.735116,warehouse
+B005,Oslo Syd,59.87416,10.878029,warehouse
+B006,Oslo Aker,59.964552,10.733024,hospital
+B007,Oslo Grünerløkka,59.845448,10.766375,warehouse
+B008,Oslo Frogner,59.965526,10.789499,office
+B009,Bergen Bryggen,60.451618,5.270905,office
+B010,Bergen Sandviken,60.478624,5.355677,warehouse
+B011,Bergen Laksevåg,60.338928,5.293344,hospital
+B012,Bergen Åsane,60.330858,5.33661,office
+B013,Trondheim Midtbyen,63.448952,10.493502,hospital
+B014,Trondheim Nidarvoll,63.374092,10.393911,office
+B015,Trondheim Lade,63.337894,10.325984,warehouse
+B016,Trondheim Heimdal,63.345382,10.433963,hospital
+B017,Stavanger Våland,58.98743,5.766536,hospital
+B018,Stavanger Hillevåg,58.962473,5.766452,warehouse
+B019,Stavanger Storhaug,59.060953,5.677496,warehouse
+B020,Stavanger Eiganes,59.036499,5.62795,office
