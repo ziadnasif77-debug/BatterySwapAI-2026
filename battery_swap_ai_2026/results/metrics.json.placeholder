@@ -1,0 +1,7 @@
+{
+  "cv_mae_mean": null,
+  "cv_mae_std": null,
+  "cv_rmse_mean": null,
+  "cv_rmse_std": null,
+  "note": "Run model/train.py to populate this file"
+}
