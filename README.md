@@ -1,64 +1,79 @@
-# BatterySwapAI-2026
+# BatterySwapAI 2026
 
-AI-powered battery swap scheduling for IoT sensors across 20 Norwegian buildings.
+## Project Overview
 
-## Overview
+BatterySwapAI 2026 predicts the Remaining Useful Life (RUL) of IoT battery sensors deployed across 20 Norwegian buildings using LightGBM with building-type calibration and 90% confidence intervals. It optimises daily field-worker routes via an OR-Tools Vehicle Routing Problem solver to minimise battery downtime costs. The recommended AGGRESSIVE scheduling strategy reduces total operational cost to 5,328,458 NOK with a 28.6% sensor rescue rate.
 
-Predicts Remaining Useful Life (RUL) of battery sensors using LightGBM, calibrates predictions by building type, quantifies uncertainty with 90% confidence intervals, and optimizes field worker routes using OR-Tools VRP.
+## Installation
 
-## Project Structure
-
-```
-battery_swap_ai_2026/
-├── model/
-│   ├── features.py           # F01–F05 feature engineering (46 features)
-│   ├── feature_pipeline.py   # Feature pipeline + importance ranking
-│   ├── train.py              # LightGBM training + cross-validation
-│   ├── calibrate.py          # Bias calibration by building type
-│   └── uncertainty.py        # 90% prediction intervals + failure probabilities
-├── optimization/
-│   ├── priority.py           # Risk scoring + sensor prioritization
-│   ├── scheduler.py          # OR-Tools VRP work order scheduler
-│   └── simulator.py          # Cost scenario simulator (AGGRESSIVE/NORMAL/CONSERVATIVE)
-├── demo/
-│   ├── map_builder.py        # Interactive Folium map (Norway sensor locations)
-│   └── dashboard.py          # Streamlit live monitor dashboard
-├── data/raw/                 # sensor_readings.csv, buildings.csv, travel_times.csv
-├── data/processed/           # features_full.csv
-└── results/                  # Predictions, work orders, scenario comparison
+```bash
+pip install -r requirements.txt
 ```
 
-## Results
+## How to Run the Model
 
-| Metric | Value |
-|---|---|
-| LightGBM MAE (raw) | 11.9 days |
-| MAE after calibration | 6.2 days (−47.8%) |
-| Interval coverage | 26.5% (90% target; limited by dataset size) |
-| Recommended strategy | AGGRESSIVE — 5,328,458 NOK total cost |
-| Sensors saved (AGGRESSIVE) | 28.6% |
+```bash
+python model/feature_pipeline.py   # Build 46 features from raw sensor readings
+python model/train.py              # Train LightGBM (saves results/lightgbm_model.pkl)
+python model/calibrate.py          # Calibrate predictions by building type
+python model/uncertainty.py        # Add 90% confidence intervals + failure probabilities
+python optimization/priority.py    # Score and rank all sensors by risk
+python optimization/scheduler.py   # Generate VRP-based work orders
+python optimization/simulator.py   # Compare AGGRESSIVE / NORMAL / CONSERVATIVE cost scenarios
+```
 
-## Running the Dashboard
+## How to Run the Dashboard
 
 ```bash
 streamlit run demo/dashboard.py
 ```
 
-## Generating the Map
+Open [http://localhost:8501](http://localhost:8501) in your browser. The dashboard shows the interactive Norway sensor map, voltage decline forecasts with confidence bands, today's work orders, and model performance metrics.
+
+To regenerate the map standalone:
 
 ```bash
 python demo/map_builder.py
-# Opens: demo/battery_map.html
+# Output: demo/battery_map.html
 ```
 
-## Running the Full Pipeline
+## Results Summary
 
-```bash
-python model/feature_pipeline.py   # Build features
-python model/train.py              # Train LightGBM
-python model/calibrate.py          # Calibrate predictions
-python model/uncertainty.py        # Add confidence intervals
-python optimization/priority.py    # Risk scoring
-python optimization/scheduler.py   # Generate work orders
-python optimization/simulator.py   # Run cost scenarios
+| Metric | Value |
+|---|---|
+| MAE after calibration | **6.2 days** (−47.8% vs raw 11.9 days) |
+| RMSE after calibration | 7.6 days |
+| Interval coverage (90% CI) | 26.5% (limited by 15 dead sensors + temporal shift) |
+| Recommended strategy | **AGGRESSIVE** (p_fail_7d > 0.3%) |
+| Sensors rescued on time | 2 / 7 (28.6%) |
+| Total cost (AGGRESSIVE) | **5,328,458 NOK** |
+| Total cost (CONSERVATIVE) | 5,520,000 NOK |
+
+## File Structure
+
+```
+battery_swap_ai_2026/
+├── model/
+│   ├── features.py           # F01–F05 feature engineering (46 features)
+│   ├── feature_pipeline.py   # Feature pipeline + LightGBM importance ranking
+│   ├── train.py              # LightGBM training with time-series cross-validation
+│   ├── calibrate.py          # Per-building-type bias calibration
+│   └── uncertainty.py        # HistGradientBoosting quantile models (90% CI)
+├── optimization/
+│   ├── priority.py           # Risk scoring (0–100) + sensor prioritization
+│   ├── scheduler.py          # OR-Tools VRP work-order generator
+│   └── simulator.py          # Cost scenario simulator (3 strategies)
+├── demo/
+│   ├── map_builder.py        # Folium interactive map (dark theme, Norway)
+│   └── dashboard.py          # Streamlit 4-tab live monitor
+├── data/
+│   ├── raw/                  # sensor_readings.csv, buildings.csv, travel_times.csv
+│   └── processed/            # features_full.csv (46 features × 9,205 rows)
+├── results/
+│   ├── predictions.csv       # Final RUL predictions (1 row per sensor)
+│   ├── work_orders.csv       # Today's field worker schedule
+│   ├── metrics.json          # Model performance summary
+│   ├── scenario_comparison.json
+│   └── lightgbm_model.pkl
+└── test_full_pipeline.py     # End-to-end pipeline validation (5/7 checks pass)
 ```
