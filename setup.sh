@@ -2,11 +2,13 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # setup.sh — BatterySwapAI 2026 — Mac / Linux
 # Usage:  chmod +x setup.sh && ./setup.sh
+# Run from the repo root (the directory containing this file).
 # ──────────────────────────────────────────────────────────────────────────────
 set -e
 
 PYTHON=${PYTHON:-python3}
 VENV_DIR=".venv"
+PKG="battery_swap_ai_2026"   # sub-package directory
 
 echo ""
 echo "╔══════════════════════════════════════════╗"
@@ -47,51 +49,51 @@ pip install -r requirements.txt
 
 # ── 6. Generate synthetic data ────────────────────────────────────────────
 echo "▸ Generating synthetic sensor data..."
-python data/raw/generate_dummy_data.py
+python "$PKG/data/raw/generate_dummy_data.py"
 
 # ── 7. Run feature pipeline ───────────────────────────────────────────────
 echo "▸ Building feature matrix..."
-python model/feature_pipeline.py
+python "$PKG/model/feature_pipeline.py"
 
 # ── 8. Train baseline + LightGBM models ──────────────────────────────────
 echo "▸ Training baseline model..."
-python model/baseline.py
+python "$PKG/model/baseline.py"
 
 echo "▸ Training LightGBM + calibration..."
-python model/train.py
+python "$PKG/model/train.py"
 
 # ── 9. Uncertainty quantification ─────────────────────────────────────────
 echo "▸ Computing prediction intervals & failure probabilities..."
-python model/uncertainty.py
+python "$PKG/model/uncertainty.py"
 
 # ── 10. Optimization pipeline ─────────────────────────────────────────────
 echo "▸ Scoring sensor priorities..."
-python optimization/priority.py
+python "$PKG/optimization/priority.py"
 
 echo "▸ Scheduling field visits (VRP)..."
-python optimization/scheduler.py
+python "$PKG/optimization/scheduler.py"
 
 echo "▸ Running cost simulations..."
-python optimization/simulator.py
+python "$PKG/optimization/simulator.py"
 
 # ── 11. Build demo map ────────────────────────────────────────────────────
 echo "▸ Building interactive Norway map..."
-python demo/map_builder.py
+python "$PKG/demo/map_builder.py"
 
-# ── 12. Run test suite ────────────────────────────────────────────────────
+# ── 12. Run test suite (from repo root — paths are fixed inside the script) ──
 echo ""
 echo "▸ Running end-to-end test suite..."
 python test_full_pipeline.py
 
 echo ""
-echo "╔══════════════════════════════════════════╗"
-echo "║   Setup complete!                        ║"
-echo "║                                          ║"
-echo "║   To launch the dashboard:               ║"
-echo "║   source .venv/bin/activate              ║"
-echo "║   streamlit run demo/dashboard.py        ║"
-echo "║                                          ║"
-echo "║   To open the map:                       ║"
-echo "║   open demo/battery_map.html             ║"
-echo "╚══════════════════════════════════════════╝"
+echo "╔══════════════════════════════════════════════════════════╗"
+echo "║   Setup complete!                                        ║"
+echo "║                                                          ║"
+echo "║   To launch the dashboard:                               ║"
+echo "║     source .venv/bin/activate                            ║"
+echo "║     streamlit run battery_swap_ai_2026/demo/dashboard.py ║"
+echo "║                                                          ║"
+echo "║   To open the map:                                       ║"
+echo "║     open battery_swap_ai_2026/demo/battery_map.html      ║"
+echo "╚══════════════════════════════════════════════════════════╝"
 echo ""

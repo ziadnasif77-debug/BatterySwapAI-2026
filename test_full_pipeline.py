@@ -12,9 +12,11 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime
 
-sys.path.insert(0, str(Path(__file__).parent))
+# test_full_pipeline.py lives at repo root; all source is under battery_swap_ai_2026/
+_REPO_ROOT  = Path(__file__).parent
+BASE        = _REPO_ROOT / "battery_swap_ai_2026"
+sys.path.insert(0, str(BASE))
 
-BASE        = Path(__file__).parent
 RESULTS_DIR = BASE / "results"
 DATA_DIR    = BASE / "data" / "raw"
 PROCESSED   = BASE / "data" / "processed"

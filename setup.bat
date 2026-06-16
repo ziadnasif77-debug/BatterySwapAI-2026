@@ -2,8 +2,11 @@
 REM ──────────────────────────────────────────────────────────────────────────
 REM setup.bat — BatterySwapAI 2026 — Windows
 REM Usage: double-click setup.bat, or run from Command Prompt / PowerShell
+REM Run from the repo root (the directory containing this file).
 REM ──────────────────────────────────────────────────────────────────────────
 setlocal enabledelayedexpansion
+
+set PKG=battery_swap_ai_2026
 
 echo.
 echo ╔══════════════════════════════════════════╗
@@ -62,52 +65,52 @@ echo [OK] All packages installed
 
 REM ── 6. Generate data ──────────────────────────────────────────────────────
 echo [..] Generating synthetic sensor data...
-python data\raw\generate_dummy_data.py
+python %PKG%\data\raw\generate_dummy_data.py
 
 REM ── 7. Feature pipeline ───────────────────────────────────────────────────
 echo [..] Building feature matrix...
-python model\feature_pipeline.py
+python %PKG%\model\feature_pipeline.py
 
 REM ── 8. Train models ───────────────────────────────────────────────────────
 echo [..] Training baseline model...
-python model\baseline.py
+python %PKG%\model\baseline.py
 
 echo [..] Training LightGBM + calibration...
-python model\train.py
+python %PKG%\model\train.py
 
 REM ── 9. Uncertainty ────────────────────────────────────────────────────────
 echo [..] Computing prediction intervals...
-python model\uncertainty.py
+python %PKG%\model\uncertainty.py
 
 REM ── 10. Optimization ──────────────────────────────────────────────────────
 echo [..] Scoring sensor priorities...
-python optimization\priority.py
+python %PKG%\optimization\priority.py
 
 echo [..] Scheduling field visits (VRP)...
-python optimization\scheduler.py
+python %PKG%\optimization\scheduler.py
 
 echo [..] Running cost simulations...
-python optimization\simulator.py
+python %PKG%\optimization\simulator.py
 
 REM ── 11. Demo map ──────────────────────────────────────────────────────────
 echo [..] Building interactive Norway map...
-python demo\map_builder.py
+python %PKG%\demo\map_builder.py
 
-REM ── 12. Test suite ────────────────────────────────────────────────────────
+REM ── 12. Test suite (from repo root — paths fixed inside the script) ───────
 echo.
 echo [..] Running end-to-end test suite...
 python test_full_pipeline.py
 
 echo.
-echo ╔══════════════════════════════════════════════════════════╗
-echo ║  Setup complete!                                        ║
-echo ║                                                         ║
-echo ║  To launch the dashboard:                               ║
-echo ║    .venv\Scripts\activate.bat                           ║
-echo ║    streamlit run demo\dashboard.py                      ║
-echo ║                                                         ║
-echo ║  To open the map:                                       ║
-echo ║    start demo\battery_map.html                          ║
-echo ╚══════════════════════════════════════════════════════════╝
+echo ╔══════════════════════════════════════════════════════════════╗
+echo ║  Setup complete!                                            ║
+echo ║                                                             ║
+echo ║  To launch the dashboard:                                   ║
+echo ║    .venv\Scripts\activate.bat                               ║
+echo ║    streamlit run battery_swap_ai_2026\demo\dashboard.py     ║
+echo ║                                                             ║
+echo ║  To open the map:                                           ║
+echo ║    start battery_swap_ai_2026\demo\battery_map.html         ║
+echo ╚══════════════════════════════════════════════════════════════╝
 echo.
 pause
