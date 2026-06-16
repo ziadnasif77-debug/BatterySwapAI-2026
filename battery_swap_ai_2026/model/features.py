@@ -1,73 +1,147 @@
 """
-Feature engineering pipeline for BatterySwapAI 2026.
-
-Transforms raw station telemetry, weather data, and calendar features
-into a flat feature matrix suitable for tree-based and linear models.
-Reads from data/raw/ and writes processed Parquet files to data/processed/.
+model/features.py
+F01 — Voltage Slope Features
 """
 
-from pathlib import Path
-import pandas as pd
 import numpy as np
+import pandas as pd
+from scipy.stats import linregress
+from pathlib import Path
 
 
-RAW_DIR = Path("data/raw")
-PROCESSED_DIR = Path("data/processed")
+DEAD_THRESHOLD = 2.5
+DATA_PATH = Path(__file__).parent.parent / "data" / "raw" / "sensor_readings.csv"
 
 
-def load_raw(filename: str) -> pd.DataFrame:
-    """Load a CSV from data/raw/."""
-    return pd.read_csv(RAW_DIR / filename, parse_dates=["timestamp"])
-
-
-def add_calendar_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Append hour-of-day, day-of-week, month, and is_weekend columns."""
-    ts = pd.to_datetime(df["timestamp"])
-    df = df.copy()
-    df["hour"] = ts.dt.hour
-    df["dow"] = ts.dt.dayofweek
-    df["month"] = ts.dt.month
-    df["is_weekend"] = (df["dow"] >= 5).astype(int)
-    df["hour_sin"] = np.sin(2 * np.pi * df["hour"] / 24)
-    df["hour_cos"] = np.cos(2 * np.pi * df["hour"] / 24)
-    return df
-
-
-def add_lag_features(df: pd.DataFrame, col: str, lags: list) -> pd.DataFrame:
-    """Add lag columns for the given target column within each station."""
-    df = df.sort_values(["station_id", "timestamp"]).copy()
-    for lag in lags:
-        df[f"{col}_lag_{lag}"] = df.groupby("station_id")[col].shift(lag)
-    return df
-
-
-def add_rolling_features(df: pd.DataFrame, col: str, windows: list) -> pd.DataFrame:
-    """Add rolling mean and std features within each station group."""
-    df = df.sort_values(["station_id", "timestamp"]).copy()
-    for w in windows:
-        grp = df.groupby("station_id")[col]
-        df[f"{col}_roll_mean_{w}"] = grp.transform(lambda x: x.shift(1).rolling(w).mean())
-        df[f"{col}_roll_std_{w}"] = grp.transform(lambda x: x.shift(1).rolling(w).std())
-    return df
-
-
-def build_feature_matrix(df: pd.DataFrame, target_col: str = "swap_count"):
+def compute_voltage_slopes(sensor_df: pd.DataFrame) -> dict:
     """
-    Run the full feature engineering pipeline.
+    Compute voltage slope features from a single sensor's historical readings.
 
-    Returns:
-        X: feature DataFrame
-        y: target Series
+    Parameters
+    ----------
+    sensor_df : pd.DataFrame
+        Rows for one sensor, sorted by timestamp, containing 'timestamp' and 'voltage'.
+        All rows must be <= the prediction timestamp (no leakage).
+
+    Returns
+    -------
+    dict with keys:
+        slope_7d, slope_14d, slope_30d, slope_all  (V/day, negative = declining)
+        acceleration  (slope_7d - slope_30d; more negative = getting worse faster)
     """
-    df = add_calendar_features(df)
-    df = add_lag_features(df, target_col, lags=[1, 2, 3, 6, 12, 24])
-    df = add_rolling_features(df, target_col, windows=[3, 6, 12, 24])
-    df = df.dropna()
-    feature_cols = [c for c in df.columns if c not in ["timestamp", "station_id", target_col]]
-    return df[feature_cols], df[target_col]
+    if sensor_df.empty:
+        return {k: np.nan for k in ("slope_7d", "slope_14d", "slope_30d", "slope_all", "acceleration")}
+
+    df = sensor_df.copy()
+    df = df.sort_values("timestamp").reset_index(drop=True)
+
+    last_ts = df["timestamp"].iloc[-1]
+
+    def _slope(window_df: pd.DataFrame) -> float:
+        if len(window_df) < 3:
+            return np.nan
+        t0 = window_df["timestamp"].iloc[0]
+        days = (window_df["timestamp"] - t0).dt.total_seconds() / 86400.0
+        result = linregress(days.values, window_df["voltage"].values)
+        return float(result.slope)
+
+    def _window(days_back: int) -> pd.DataFrame:
+        cutoff = last_ts - pd.Timedelta(days=days_back)
+        return df[df["timestamp"] >= cutoff]
+
+    slope_7d  = _slope(_window(7))
+    slope_14d = _slope(_window(14))
+    slope_30d = _slope(_window(30))
+    slope_all = _slope(df)
+
+    if np.isnan(slope_7d) or np.isnan(slope_30d):
+        acceleration = np.nan
+    else:
+        acceleration = slope_7d - slope_30d
+
+    return {
+        "slope_7d":     slope_7d,
+        "slope_14d":    slope_14d,
+        "slope_30d":    slope_30d,
+        "slope_all":    slope_all,
+        "acceleration": acceleration,
+    }
 
 
-def save_processed(df: pd.DataFrame, filename: str) -> None:
-    """Save DataFrame as Parquet in data/processed/."""
-    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(PROCESSED_DIR / filename, index=False)
+def add_slope_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add F01 voltage slope columns to the full sensor DataFrame.
+
+    Each row gets slopes computed from all readings for that sensor UP TO
+    AND INCLUDING that row's timestamp (strictly backward-looking, no leakage).
+
+    New columns added:
+        slope_7d, slope_14d, slope_30d, slope_all, acceleration
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Full dataset with columns: sensor_id, timestamp, voltage (at minimum).
+
+    Returns
+    -------
+    pd.DataFrame with five new float columns appended.
+    """
+    df = df.copy().sort_values(["sensor_id", "timestamp"]).reset_index(drop=True)
+
+    result_rows = []
+
+    for sensor_id, sensor_df in df.groupby("sensor_id", sort=False):
+        sensor_df = sensor_df.sort_values("timestamp").reset_index(drop=True)
+
+        slopes_list = []
+        for i in range(len(sensor_df)):
+            past = sensor_df.iloc[: i + 1]
+            slopes_list.append(compute_voltage_slopes(past))
+
+        slopes_df = pd.DataFrame(slopes_list, index=sensor_df.index)
+        combined  = pd.concat([sensor_df, slopes_df], axis=1)
+        result_rows.append(combined)
+
+    out = pd.concat(result_rows, ignore_index=True)
+    out = out.sort_values(["sensor_id", "timestamp"]).reset_index(drop=True)
+    return out
+
+
+# ── Test ─────────────────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    print("Loading sensor data...")
+    df = pd.read_csv(DATA_PATH, parse_dates=["timestamp"])
+    print(f"  Loaded {len(df):,} rows for {df['sensor_id'].nunique()} sensors")
+
+    print("Computing F01 slope features (this may take ~30s)...")
+    df_feat = add_slope_features(df)
+
+    new_cols = ["slope_7d", "slope_14d", "slope_30d", "slope_all", "acceleration"]
+
+    print("\nFirst 5 rows (selected columns):")
+    print(df_feat[["sensor_id", "timestamp", "voltage"] + new_cols].head(5).to_string(index=False))
+
+    print(f"\nF01 complete. New columns: {new_cols}")
+
+    # Verify no NaN in last 80% of readings per sensor
+    violations = 0
+    for sid, grp in df_feat.groupby("sensor_id"):
+        grp = grp.sort_values("timestamp").reset_index(drop=True)
+        cutoff = int(len(grp) * 0.20)
+        last_80 = grp.iloc[cutoff:]
+        nan_counts = last_80[new_cols].isna().sum()
+        bad = nan_counts[nan_counts > 0]
+        if not bad.empty:
+            print(f"  WARNING {sid}: NaNs in last 80% — {bad.to_dict()}")
+            violations += 1
+
+    if violations == 0:
+        print("NaN check PASSED — no NaNs in last 80% of any sensor's readings.")
+    else:
+        print(f"NaN check FAILED — {violations} sensor(s) have NaNs in last 80%.")
+
+    print("\nColumn dtypes:")
+    print(df_feat[new_cols].dtypes.to_string())
+    print(f"\nTotal rows in feature DataFrame: {len(df_feat):,}")
