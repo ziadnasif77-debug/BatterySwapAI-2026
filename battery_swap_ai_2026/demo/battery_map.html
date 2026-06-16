@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_192862741cb7aca57090544d27d2cf6a {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-dvf/0.3.0/leaflet-dvf.markers.min.js"></script>
+</head>
+<body>
+    
+    
+<div id="map-legend" style="
+    position: fixed;
+    bottom: 30px;
+    right: 15px;
+    z-index: 9999;
+    background: rgba(20, 20, 40, 0.92);
+    border: 1px solid #444;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    color: #e0e0e0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.7);
+    min-width: 200px;
+">
+  <div style="font-weight:bold;font-size:13px;color:#fff;margin-bottom:10px;
+              border-bottom:1px solid #444;padding-bottom:6px">
+    Battery Risk Legend
+  </div>
+
+  <div style="margin-bottom:8px;font-weight:bold;color:#bbb;font-size:11px">SENSOR STATUS</div>
+  <div style="display:flex;align-items:center;margin-bottom:5px">
+    <span style="width:14px;height:14px;border-radius:50%;background:#808080;
+                 display:inline-block;margin-right:9px;flex-shrink:0"></span>
+    <span>Dead — Battery at floor (100/100)</span>
+  </div>
+  <div style="display:flex;align-items:center;margin-bottom:5px">
+    <span style="width:14px;height:14px;border-radius:50%;background:#FF0000;
+                 display:inline-block;margin-right:9px;flex-shrink:0"></span>
+    <span>Critical — Risk &gt; 70</span>
+  </div>
+  <div style="display:flex;align-items:center;margin-bottom:5px">
+    <span style="width:14px;height:14px;border-radius:50%;background:#FF8C00;
+                 display:inline-block;margin-right:9px;flex-shrink:0"></span>
+    <span>Warning — Risk 40–70</span>
+  </div>
+  <div style="display:flex;align-items:center;margin-bottom:12px">
+    <span style="width:14px;height:14px;border-radius:50%;background:#00CC44;
+                 display:inline-block;margin-right:9px;flex-shrink:0"></span>
+    <span>Safe — Risk &lt; 40</span>
+  </div>
+
+  <div style="font-weight:bold;color:#bbb;font-size:11px;margin-bottom:6px">WORKER ROUTES</div>
+  <div style="display:flex;align-items:center;margin-bottom:5px">
+    <span style="width:22px;height:3px;background:#0066FF;
+                 display:inline-block;margin-right:9px;flex-shrink:0"></span>
+    <span>Worker 1</span>
+  </div>
+  <div style="display:flex;align-items:center;margin-bottom:5px">
+    <span style="width:22px;height:3px;background:#00AA44;
+                 display:inline-block;margin-right:9px;flex-shrink:0"></span>
+    <span>Worker 2</span>
+  </div>
+  <div style="display:flex;align-items:center;margin-bottom:10px">
+    <span style="width:22px;height:3px;background:#9900CC;
+                 display:inline-block;margin-right:9px;flex-shrink:0"></span>
+    <span>Worker 3</span>
+  </div>
+
+  <div style="display:flex;align-items:center">
+    <span style="width:14px;height:14px;border-radius:3px;background:#FFD700;
+                 display:inline-block;margin-right:9px;flex-shrink:0"></span>
+    <span>Depot (B001 Oslo)</span>
+  </div>
+
+  <div style="margin-top:10px;border-top:1px solid #333;padding-top:8px;
+              color:#888;font-size:10px;text-align:center">
+    Click any marker for details
+  </div>
+</div>
+    
+            <div class="folium-map" id="map_192862741cb7aca57090544d27d2cf6a" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_192862741cb7aca57090544d27d2cf6a = L.map(
+                "map_192862741cb7aca57090544d27d2cf6a",
+                {
+                    center: [62.0, 10.0],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 6,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_6cd032be067ad7b58c824eb9fc390e1b = L.tileLayer(
+                "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 20,
+  "maxNativeZoom": 20,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"https://carto.com/attributions\"\u003eCARTO\u003c/a\u003e",
+  "subdomains": "abcd",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_6cd032be067ad7b58c824eb9fc390e1b.addTo(map_192862741cb7aca57090544d27d2cf6a);
+        
+    
+            var feature_group_105056e6288713797b4659691e444d7a = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var circle_marker_55a32c3712c42886e0a84e09c1779c72 = L.circleMarker(
+                [59.954791, 10.731664],
+                {"bubblingMouseEvents": true, "color": "#808080", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#808080", "fillOpacity": 0.85, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 10, "stroke": true, "weight": 1.5}
+            ).addTo(feature_group_105056e6288713797b4659691e444d7a);
+        
+    
+        var popup_385585abf287e1c72e2cccf2065226f7 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_22e922b6f3ace0b5f2b31e98427e2e1e = $(`<div id="html_22e922b6f3ace0b5f2b31e98427e2e1e" style="width: 100.0%; height: 100.0%;"> <div style="     font-family: 'Segoe UI', Arial, sans-serif;     font-size: 13px;     color: #e0e0e0;     background: #1a1a2e;     border: 1px solid #808080;     border-radius: 8px;     padding: 14px 16px;     min-width: 260px;     max-width: 300px;     box-shadow: 0 4px 16px rgba(0,0,0,0.6); ">   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">     <b style="font-size:14px;color:#ffffff">SEN_001</b>     <span style="         background:#808080;         color:#fff;         font-size:10px;         font-weight:bold;         padding:2px 7px;         border-radius:10px;     ">DEAD</span>   </div>   <div style="color:#aaa;margin-bottom:10px;font-size:12px">Oslo Sentrum (B001)</div>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">Battery Level</td>       <td style="text-align:right;color:#808080;font-weight:bold">0.0%</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">Confidence</td>       <td style="text-align:right;color:#ccc">LOW</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">RUL Prediction</td>       <td style="text-align:right;color:#ffffff;font-weight:bold">18.1 days</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">Predicted EOL</td>       <td style="text-align:right;color:#ccc">2026-07-04</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">90% CI Range</td>       <td style="text-align:right;color:#ccc">18 – 31 d</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">Risk Score</td>       <td style="text-align:right;color:#808080;font-weight:bold">100 / 100</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">P(fail 7 days)</td>       <td style="text-align:right;color:#ccc">0.3%</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <div style="color:#aaa;font-size:11px;margin-bottom:4px">Top Risk Factors:</div>   <ul style="margin:0;padding-left:16px;color:#cccccc;font-size:11px;line-height:1.6">     <li style='margin:2px 0'>1. Battery depleted (voltage at 2.5 V floor)</li><li style='margin:2px 0'>2. Failure within 30 days (RUL 18.1 d)</li><li style='margin:2px 0'>3. Critical site — hospital building (×1.5 weight)</li>   </ul> </div> </div>`)[0];
+                popup_385585abf287e1c72e2cccf2065226f7.setContent(html_22e922b6f3ace0b5f2b31e98427e2e1e);
+            
+        
+
+        circle_marker_55a32c3712c42886e0a84e09c1779c72.bindPopup(popup_385585abf287e1c72e2cccf2065226f7)
+        ;
+
+        
+    
+    
+            circle_marker_55a32c3712c42886e0a84e09c1779c72.bindTooltip(
+                `<div>
+                     SEN_001 — Risk 100/100 (DEAD)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_c5a0dc9d84a42bef0a79f27ad73a2eba = L.circleMarker(
+                [60.338928, 5.293344],
+                {"bubblingMouseEvents": true, "color": "#808080", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#808080", "fillOpacity": 0.85, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 10, "stroke": true, "weight": 1.5}
+            ).addTo(feature_group_105056e6288713797b4659691e444d7a);
+        
+    
+        var popup_5da0c3bdde4c477b3b8632b3e989897c = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_1826358f2234bb2959e4512040cab2c4 = $(`<div id="html_1826358f2234bb2959e4512040cab2c4" style="width: 100.0%; height: 100.0%;"> <div style="     font-family: 'Segoe UI', Arial, sans-serif;     font-size: 13px;     color: #e0e0e0;     background: #1a1a2e;     border: 1px solid #808080;     border-radius: 8px;     padding: 14px 16px;     min-width: 260px;     max-width: 300px;     box-shadow: 0 4px 16px rgba(0,0,0,0.6); ">   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">     <b style="font-size:14px;color:#ffffff">SEN_011</b>     <span style="         background:#808080;         color:#fff;         font-size:10px;         font-weight:bold;         padding:2px 7px;         border-radius:10px;     ">DEAD</span>   </div>   <div style="color:#aaa;margin-bottom:10px;font-size:12px">Bergen Laksevåg (B011)</div>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">Battery Level</td>       <td style="text-align:right;color:#808080;font-weight:bold">0.0%</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">Confidence</td>       <td style="text-align:right;color:#ccc">LOW</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">RUL Prediction</td>       <td style="text-align:right;color:#ffffff;font-weight:bold">22.9 days</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">Predicted EOL</td>       <td style="text-align:right;color:#ccc">2026-07-08</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">90% CI Range</td>       <td style="text-align:right;color:#ccc">12 – 36 d</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">Risk Score</td>       <td style="text-align:right;color:#808080;font-weight:bold">100 / 100</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">P(fail 7 days)</td>       <td style="text-align:right;color:#ccc">1.3%</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <div style="color:#aaa;font-size:11px;margin-bottom:4px">Top Risk Factors:</div>   <ul style="margin:0;padding-left:16px;color:#cccccc;font-size:11px;line-height:1.6">     <li style='margin:2px 0'>1. Battery depleted (voltage at 2.5 V floor)</li><li style='margin:2px 0'>2. Failure within 30 days (RUL 22.9 d)</li><li style='margin:2px 0'>3. Critical site — hospital building (×1.5 weight)</li>   </ul> </div> </div>`)[0];
+                popup_5da0c3bdde4c477b3b8632b3e989897c.setContent(html_1826358f2234bb2959e4512040cab2c4);
+            
+        
+
+        circle_marker_c5a0dc9d84a42bef0a79f27ad73a2eba.bindPopup(popup_5da0c3bdde4c477b3b8632b3e989897c)
+        ;
+
+        
+    
+    
+            circle_marker_c5a0dc9d84a42bef0a79f27ad73a2eba.bindTooltip(
+                `<div>
+                     SEN_011 — Risk 100/100 (DEAD)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_2e10a7482634006323ba47c278152921 = L.circleMarker(
+                [60.330858, 5.33661],
+                {"bubblingMouseEvents": true, "color": "#808080", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#808080", "fillOpacity": 0.85, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 10, "stroke": true, "weight": 1.5}
+            ).addTo(feature_group_105056e6288713797b4659691e444d7a);
+        
+    
+        var popup_32164351dbb046aa52a7978be8c928ab = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_8d53666329891ec32f514751cd2dd25a = $(`<div id="html_8d53666329891ec32f514751cd2dd25a" style="width: 100.0%; height: 100.0%;"> <div style="     font-family: 'Segoe UI', Arial, sans-serif;     font-size: 13px;     color: #e0e0e0;     background: #1a1a2e;     border: 1px solid #808080;     border-radius: 8px;     padding: 14px 16px;     min-width: 260px;     max-width: 300px;     box-shadow: 0 4px 16px rgba(0,0,0,0.6); ">   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">     <b style="font-size:14px;color:#ffffff">SEN_012</b>     <span style="         background:#808080;         color:#fff;         font-size:10px;         font-weight:bold;         padding:2px 7px;         border-radius:10px;     ">DEAD</span>   </div>   <div style="color:#aaa;margin-bottom:10px;font-size:12px">Bergen Åsane (B012)</div>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">Battery Level</td>       <td style="text-align:right;color:#808080;font-weight:bold">0.0%</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">Confidence</td>       <td style="text-align:right;color:#ccc">LOW</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">RUL Prediction</td>       <td style="text-align:right;color:#ffffff;font-weight:bold">8.8 days</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">Predicted EOL</td>       <td style="text-align:right;color:#ccc">2026-06-24</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">90% CI Range</td>       <td style="text-align:right;color:#ccc">9 – 23 d</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">Risk Score</td>       <td style="text-align:right;color:#808080;font-weight:bold">100 / 100</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">P(fail 7 days)</td>       <td style="text-align:right;color:#ccc">33.7%</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <div style="color:#aaa;font-size:11px;margin-bottom:4px">Top Risk Factors:</div>   <ul style="margin:0;padding-left:16px;color:#cccccc;font-size:11px;line-height:1.6">     <li style='margin:2px 0'>1. Battery depleted (voltage at 2.5 V floor)</li><li style='margin:2px 0'>2. Failure within 30 days (RUL 8.8 d)</li><li style='margin:2px 0'>3. Very high 7-day failure probability (33.7%)</li>   </ul> </div> </div>`)[0];
+                popup_32164351dbb046aa52a7978be8c928ab.setContent(html_8d53666329891ec32f514751cd2dd25a);
+            
+        
+
+        circle_marker_2e10a7482634006323ba47c278152921.bindPopup(popup_32164351dbb046aa52a7978be8c928ab)
+        ;
+
+        
+    
+    
+            circle_marker_2e10a7482634006323ba47c278152921.bindTooltip(
+                `<div>
+                     SEN_012 — Risk 100/100 (DEAD)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_7eaf4d18ab4f657b7ab39f1329bc0710 = L.circleMarker(
+                [59.825623, 10.735116],
+                {"bubblingMouseEvents": true, "color": "#808080", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#808080", "fillOpacity": 0.85, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 10, "stroke": true, "weight": 1.5}
+            ).addTo(feature_group_105056e6288713797b4659691e444d7a);
+        
+    
+        var popup_3383f52b42702b635f09c103a6d4ede8 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_9340e3a2612375ccbb008868a53a80a7 = $(`<div id="html_9340e3a2612375ccbb008868a53a80a7" style="width: 100.0%; height: 100.0%;"> <div style="     font-family: 'Segoe UI', Arial, sans-serif;     font-size: 13px;     color: #e0e0e0;     background: #1a1a2e;     border: 1px solid #808080;     border-radius: 8px;     padding: 14px 16px;     min-width: 260px;     max-width: 300px;     box-shadow: 0 4px 16px rgba(0,0,0,0.6); ">   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">     <b style="font-size:14px;color:#ffffff">SEN_004</b>     <span style="         background:#808080;         color:#fff;         font-size:10px;         font-weight:bold;         padding:2px 7px;         border-radius:10px;     ">DEAD</span>   </div>   <div style="color:#aaa;margin-bottom:10px;font-size:12px">Oslo Nord (B004)</div>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">Battery Level</td>       <td style="text-align:right;color:#808080;font-weight:bold">0.0%</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">Confidence</td>       <td style="text-align:right;color:#ccc">LOW</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">RUL Prediction</td>       <td style="text-align:right;color:#ffffff;font-weight:bold">18.5 days</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">Predicted EOL</td>       <td style="text-align:right;color:#ccc">2026-07-04</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">90% CI Range</td>       <td style="text-align:right;color:#ccc">12 – 32 d</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">Risk Score</td>       <td style="text-align:right;color:#808080;font-weight:bold">100 / 100</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">P(fail 7 days)</td>       <td style="text-align:right;color:#ccc">3.0%</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <div style="color:#aaa;font-size:11px;margin-bottom:4px">Top Risk Factors:</div>   <ul style="margin:0;padding-left:16px;color:#cccccc;font-size:11px;line-height:1.6">     <li style='margin:2px 0'>1. Battery depleted (voltage at 2.5 V floor)</li><li style='margin:2px 0'>2. Failure within 30 days (RUL 18.5 d)</li>   </ul> </div> </div>`)[0];
+                popup_3383f52b42702b635f09c103a6d4ede8.setContent(html_9340e3a2612375ccbb008868a53a80a7);
+            
+        
+
+        circle_marker_7eaf4d18ab4f657b7ab39f1329bc0710.bindPopup(popup_3383f52b42702b635f09c103a6d4ede8)
+        ;
+
+        
+    
+    
+            circle_marker_7eaf4d18ab4f657b7ab39f1329bc0710.bindTooltip(
+                `<div>
+                     SEN_004 — Risk 100/100 (DEAD)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_63629d3ec7da77a9d94d0095bf2a1bf8 = L.circleMarker(
+                [59.995124, 10.828342],
+                {"bubblingMouseEvents": true, "color": "#808080", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#808080", "fillOpacity": 0.85, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 10, "stroke": true, "weight": 1.5}
+            ).addTo(feature_group_105056e6288713797b4659691e444d7a);
+        
+    
+        var popup_d30e142e0ccd8526a25effa28bd31882 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_1c492698557b6f9531cd3655a3e35cea = $(`<div id="html_1c492698557b6f9531cd3655a3e35cea" style="width: 100.0%; height: 100.0%;"> <div style="     font-family: 'Segoe UI', Arial, sans-serif;     font-size: 13px;     color: #e0e0e0;     background: #1a1a2e;     border: 1px solid #808080;     border-radius: 8px;     padding: 14px 16px;     min-width: 260px;     max-width: 300px;     box-shadow: 0 4px 16px rgba(0,0,0,0.6); ">   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">     <b style="font-size:14px;color:#ffffff">SEN_003</b>     <span style="         background:#808080;         color:#fff;         font-size:10px;         font-weight:bold;         padding:2px 7px;         border-radius:10px;     ">DEAD</span>   </div>   <div style="color:#aaa;margin-bottom:10px;font-size:12px">Oslo Vest (B003)</div>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">Battery Level</td>       <td style="text-align:right;color:#808080;font-weight:bold">0.0%</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">Confidence</td>       <td style="text-align:right;color:#ccc">LOW</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">RUL Prediction</td>       <td style="text-align:right;color:#ffffff;font-weight:bold">16.5 days</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">Predicted EOL</td>       <td style="text-align:right;color:#ccc">2026-07-02</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">90% CI Range</td>       <td style="text-align:right;color:#ccc">11 – 24 d</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">Risk Score</td>       <td style="text-align:right;color:#808080;font-weight:bold">100 / 100</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">P(fail 7 days)</td>       <td style="text-align:right;color:#ccc">0.9%</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <div style="color:#aaa;font-size:11px;margin-bottom:4px">Top Risk Factors:</div>   <ul style="margin:0;padding-left:16px;color:#cccccc;font-size:11px;line-height:1.6">     <li style='margin:2px 0'>1. Battery depleted (voltage at 2.5 V floor)</li><li style='margin:2px 0'>2. Failure within 30 days (RUL 16.5 d)</li>   </ul> </div> </div>`)[0];
+                popup_d30e142e0ccd8526a25effa28bd31882.setContent(html_1c492698557b6f9531cd3655a3e35cea);
+            
+        
+
+        circle_marker_63629d3ec7da77a9d94d0095bf2a1bf8.bindPopup(popup_d30e142e0ccd8526a25effa28bd31882)
+        ;
+
+        
+    
+    
+            circle_marker_63629d3ec7da77a9d94d0095bf2a1bf8.bindTooltip(
+                `<div>
+                     SEN_003 — Risk 100/100 (DEAD)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_e702ae53ac5c13313268894573cc113a = L.circleMarker(
+                [60.478624, 5.355677],
+                {"bubblingMouseEvents": true, "color": "#808080", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#808080", "fillOpacity": 0.85, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 10, "stroke": true, "weight": 1.5}
+            ).addTo(feature_group_105056e6288713797b4659691e444d7a);
+        
+    
+        var popup_dd58f3af4d057dc09c8cb9b91d7a52cb = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_f3064a80e0d76c6502e3e8cc074157ec = $(`<div id="html_f3064a80e0d76c6502e3e8cc074157ec" style="width: 100.0%; height: 100.0%;"> <div style="     font-family: 'Segoe UI', Arial, sans-serif;     font-size: 13px;     color: #e0e0e0;     background: #1a1a2e;     border: 1px solid #808080;     border-radius: 8px;     padding: 14px 16px;     min-width: 260px;     max-width: 300px;     box-shadow: 0 4px 16px rgba(0,0,0,0.6); ">   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">     <b style="font-size:14px;color:#ffffff">SEN_010</b>     <span style="         background:#808080;         color:#fff;         font-size:10px;         font-weight:bold;         padding:2px 7px;         border-radius:10px;     ">DEAD</span>   </div>   <div style="color:#aaa;margin-bottom:10px;font-size:12px">Bergen Sandviken (B010)</div>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">Battery Level</td>       <td style="text-align:right;color:#808080;font-weight:bold">0.0%</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">Confidence</td>       <td style="text-align:right;color:#ccc">LOW</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">RUL Prediction</td>       <td style="text-align:right;color:#ffffff;font-weight:bold">17.7 days</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">Predicted EOL</td>       <td style="text-align:right;color:#ccc">2026-07-03</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">90% CI Range</td>       <td style="text-align:right;color:#ccc">16 – 43 d</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">Risk Score</td>       <td style="text-align:right;color:#808080;font-weight:bold">100 / 100</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">P(fail 7 days)</td>       <td style="text-align:right;color:#ccc">9.5%</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <div style="color:#aaa;font-size:11px;margin-bottom:4px">Top Risk Factors:</div>   <ul style="margin:0;padding-left:16px;color:#cccccc;font-size:11px;line-height:1.6">     <li style='margin:2px 0'>1. Battery depleted (voltage at 2.5 V floor)</li><li style='margin:2px 0'>2. Failure within 30 days (RUL 17.7 d)</li><li style='margin:2px 0'>3. Elevated 7-day failure probability (9.5%)</li>   </ul> </div> </div>`)[0];
+                popup_dd58f3af4d057dc09c8cb9b91d7a52cb.setContent(html_f3064a80e0d76c6502e3e8cc074157ec);
+            
+        
+
+        circle_marker_e702ae53ac5c13313268894573cc113a.bindPopup(popup_dd58f3af4d057dc09c8cb9b91d7a52cb)
+        ;
+
+        
+    
+    
+            circle_marker_e702ae53ac5c13313268894573cc113a.bindTooltip(
+                `<div>
+                     SEN_010 — Risk 100/100 (DEAD)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_6a18cf27459bca3cabfe7c1a0eee50a6 = L.circleMarker(
+                [59.87416, 10.878029],
+                {"bubblingMouseEvents": true, "color": "#808080", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#808080", "fillOpacity": 0.85, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 10, "stroke": true, "weight": 1.5}
+            ).addTo(feature_group_105056e6288713797b4659691e444d7a);
+        
+    
+        var popup_241230758bc91bd55bc5d01850f06934 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_6de387914fc619ba38bc5824e8504ae5 = $(`<div id="html_6de387914fc619ba38bc5824e8504ae5" style="width: 100.0%; height: 100.0%;"> <div style="     font-family: 'Segoe UI', Arial, sans-serif;     font-size: 13px;     color: #e0e0e0;     background: #1a1a2e;     border: 1px solid #808080;     border-radius: 8px;     padding: 14px 16px;     min-width: 260px;     max-width: 300px;     box-shadow: 0 4px 16px rgba(0,0,0,0.6); ">   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">     <b style="font-size:14px;color:#ffffff">SEN_005</b>     <span style="         background:#808080;         color:#fff;         font-size:10px;         font-weight:bold;         padding:2px 7px;         border-radius:10px;     ">DEAD</span>   </div>   <div style="color:#aaa;margin-bottom:10px;font-size:12px">Oslo Syd (B005)</div>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">Battery Level</td>       <td style="text-align:right;color:#808080;font-weight:bold">0.0%</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">Confidence</td>       <td style="text-align:right;color:#ccc">LOW</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">RUL Prediction</td>       <td style="text-align:right;color:#ffffff;font-weight:bold">16.2 days</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">Predicted EOL</td>       <td style="text-align:right;color:#ccc">2026-07-02</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">90% CI Range</td>       <td style="text-align:right;color:#ccc">12 – 19 d</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <table style="width:100%;border-collapse:collapse">     <tr>       <td style="color:#aaa;padding:2px 0">Risk Score</td>       <td style="text-align:right;color:#808080;font-weight:bold">100 / 100</td>     </tr>     <tr>       <td style="color:#aaa;padding:2px 0">P(fail 7 days)</td>       <td style="text-align:right;color:#ccc">0.0%</td>     </tr>   </table>    <hr style="border:0;border-top:1px solid #333;margin:8px 0">    <div style="color:#aaa;font-size:11px;margin-bottom:4px">Top Risk Factors:</div>   <ul style="margin:0;padding-left:16px;color:#cccccc;font-size:11px;line-height:1.6">     <li style='margin:2px 0'>1. Battery depleted (voltage at 2.5 V floor)</li><li style='margin:2px 0'>2. Failure within 30 days (RUL 16.2 d)</li>   </ul> </div> </div>`)[0];
+                popup_241230758bc91bd55bc5d01850f06934.setContent(html_6de387914fc619ba38bc5824e8504ae5);
+            
+        
+
+        circle_marker_6a18cf27459bca3cabfe7c1a0eee50a6.bindPopup(popup_241230758bc91bd55bc5d01850f06934)
+        ;
+
+        
+    
+    
+            circle_marker_6a18cf27459bca3cabfe7c1a0eee50a6.bindTooltip(
+                `<div>
+                     SEN_005 — Risk 100/100 (DEAD)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            feature_group_105056e6288713797b4659691e444d7a.addTo(map_192862741cb7aca57090544d27d2cf6a);
+        
+    
+            var feature_group_b4892fe348192aa99fc79b91772235cf = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var poly_line_daa270204a8d16cd647ee2a1407c98ac = L.polyline(
+                [[59.954791, 10.731664], [59.995124, 10.828342], [59.87416, 10.878029], [59.825623, 10.735116], [59.954791, 10.731664]],
+                {"bubblingMouseEvents": true, "color": "#9900CC", "dashArray": null, "dashOffset": null, "fill": false, "fillColor": "#9900CC", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.8, "smoothFactor": 1.0, "stroke": true, "weight": 3}
+            ).addTo(feature_group_b4892fe348192aa99fc79b91772235cf);
+        
+    
+            poly_line_daa270204a8d16cd647ee2a1407c98ac.bindTooltip(
+                `<div>
+                     Worker 3 route
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var regular_polygon_marker_1bc98b0ff205487a70817783a0d79c14 = new L.RegularPolygonMarker(
+                [59.9749575, 10.780003],
+                {
+  "stroke": true,
+  "color": "#9900CC",
+  "weight": 3,
+  "opacity": 1.0,
+  "lineCap": "round",
+  "lineJoin": "round",
+  "dashArray": null,
+  "dashOffset": null,
+  "fill": true,
+  "fillColor": "#9900CC",
+  "fillOpacity": 0.9,
+  "fillRule": "evenodd",
+  "bubblingMouseEvents": true,
+  "radius": 5,
+  "numberOfSides": 3,
+  "rotation": 0,
+}
+            ).addTo(feature_group_b4892fe348192aa99fc79b91772235cf);
+        
+    
+            var regular_polygon_marker_0e10f864a96b14060d67355c6c958f8f = new L.RegularPolygonMarker(
+                [59.934642, 10.853185499999999],
+                {
+  "stroke": true,
+  "color": "#9900CC",
+  "weight": 3,
+  "opacity": 1.0,
+  "lineCap": "round",
+  "lineJoin": "round",
+  "dashArray": null,
+  "dashOffset": null,
+  "fill": true,
+  "fillColor": "#9900CC",
+  "fillOpacity": 0.9,
+  "fillRule": "evenodd",
+  "bubblingMouseEvents": true,
+  "radius": 5,
+  "numberOfSides": 3,
+  "rotation": 0,
+}
+            ).addTo(feature_group_b4892fe348192aa99fc79b91772235cf);
+        
+    
+            var regular_polygon_marker_6c840b4bd6a7c99b965cca70cb8c0679 = new L.RegularPolygonMarker(
+                [59.8498915, 10.8065725],
+                {
+  "stroke": true,
+  "color": "#9900CC",
+  "weight": 3,
+  "opacity": 1.0,
+  "lineCap": "round",
+  "lineJoin": "round",
+  "dashArray": null,
+  "dashOffset": null,
+  "fill": true,
+  "fillColor": "#9900CC",
+  "fillOpacity": 0.9,
+  "fillRule": "evenodd",
+  "bubblingMouseEvents": true,
+  "radius": 5,
+  "numberOfSides": 3,
+  "rotation": 0,
+}
+            ).addTo(feature_group_b4892fe348192aa99fc79b91772235cf);
+        
+    
+            var regular_polygon_marker_36b588ac70818e2f1d71121872883ed7 = new L.RegularPolygonMarker(
+                [59.890207000000004, 10.73339],
+                {
+  "stroke": true,
+  "color": "#9900CC",
+  "weight": 3,
+  "opacity": 1.0,
+  "lineCap": "round",
+  "lineJoin": "round",
+  "dashArray": null,
+  "dashOffset": null,
+  "fill": true,
+  "fillColor": "#9900CC",
+  "fillOpacity": 0.9,
+  "fillRule": "evenodd",
+  "bubblingMouseEvents": true,
+  "radius": 5,
+  "numberOfSides": 3,
+  "rotation": 0,
+}
+            ).addTo(feature_group_b4892fe348192aa99fc79b91772235cf);
+        
+    
+            var marker_bfe634d42cc3e4b922b2ae68453429a0 = L.marker(
+                [59.995124, 10.828342],
+                {
+}
+            ).addTo(feature_group_b4892fe348192aa99fc79b91772235cf);
+        
+    
+            var div_icon_ecabf987df6b4a37538eedcabdd3169b = L.divIcon({
+  "html": "\n\u003cdiv style=\"\n    background:#9900CC;\n    color:#fff;\n    font-weight:bold;\n    font-size:11px;\n    width:20px;height:20px;\n    border-radius:50%;\n    display:flex;\n    align-items:center;\n    justify-content:center;\n    border:2px solid #fff;\n    box-shadow:0 2px 6px rgba(0,0,0,0.5);\n    margin-left:-10px;margin-top:-10px;\n\"\u003e1\u003c/div\u003e",
+  "iconSize": [20, 20],
+  "iconAnchor": [10, 10],
+  "className": "empty",
+});
+        
+    
+        var popup_794a2999e5d3ed27ebf4b2c38f03f123 = L.popup({
+  "maxWidth": 260,
+});
+
+        
+            
+                var html_df7a30038853b10ae949d3f24fa43e20 = $(`<div id="html_df7a30038853b10ae949d3f24fa43e20" style="width: 100.0%; height: 100.0%;"> <div style="     font-family:'Segoe UI',Arial,sans-serif;     font-size:12px;     background:#1a1a2e;     color:#e0e0e0;     border:1px solid #9900CC;     border-radius:6px;     padding:10px 14px;     min-width:200px; ">   <b style="color:#9900CC">Worker 3 — Stop 1</b><br>   <span style="color:#aaa">Oslo Vest (B003)</span><br><br>   <table style="width:100%;border-collapse:collapse">     <tr><td style="color:#aaa">Arrival</td><td style="text-align:right">08:19</td></tr>     <tr><td style="color:#aaa">Departure</td><td style="text-align:right">08:34</td></tr>     <tr><td style="color:#aaa">Batteries</td><td style="text-align:right">1</td></tr>     <tr><td style="color:#aaa">Sensors</td><td style="text-align:right;font-size:11px">SEN_003</td></tr>   </table> </div> </div>`)[0];
+                popup_794a2999e5d3ed27ebf4b2c38f03f123.setContent(html_df7a30038853b10ae949d3f24fa43e20);
+            
+        
+
+        marker_bfe634d42cc3e4b922b2ae68453429a0.bindPopup(popup_794a2999e5d3ed27ebf4b2c38f03f123)
+        ;
+
+        
+    
+    
+            marker_bfe634d42cc3e4b922b2ae68453429a0.bindTooltip(
+                `<div>
+                     W3 Stop 1: Oslo Vest @ 08:19
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_bfe634d42cc3e4b922b2ae68453429a0.setIcon(div_icon_ecabf987df6b4a37538eedcabdd3169b);
+            
+    
+            var marker_643f9b3ee72152770f099ecb58383e07 = L.marker(
+                [59.87416, 10.878029],
+                {
+}
+            ).addTo(feature_group_b4892fe348192aa99fc79b91772235cf);
+        
+    
+            var div_icon_efc497ffd511a8e028d59e8abc54ac7c = L.divIcon({
+  "html": "\n\u003cdiv style=\"\n    background:#9900CC;\n    color:#fff;\n    font-weight:bold;\n    font-size:11px;\n    width:20px;height:20px;\n    border-radius:50%;\n    display:flex;\n    align-items:center;\n    justify-content:center;\n    border:2px solid #fff;\n    box-shadow:0 2px 6px rgba(0,0,0,0.5);\n    margin-left:-10px;margin-top:-10px;\n\"\u003e2\u003c/div\u003e",
+  "iconSize": [20, 20],
+  "iconAnchor": [10, 10],
+  "className": "empty",
+});
+        
+    
+        var popup_74c11918a2b4a373ab8afae382f67676 = L.popup({
+  "maxWidth": 260,
+});
+
+        
+            
+                var html_843b00b842a0117996a36f545e6f9ebd = $(`<div id="html_843b00b842a0117996a36f545e6f9ebd" style="width: 100.0%; height: 100.0%;"> <div style="     font-family:'Segoe UI',Arial,sans-serif;     font-size:12px;     background:#1a1a2e;     color:#e0e0e0;     border:1px solid #9900CC;     border-radius:6px;     padding:10px 14px;     min-width:200px; ">   <b style="color:#9900CC">Worker 3 — Stop 2</b><br>   <span style="color:#aaa">Oslo Syd (B005)</span><br><br>   <table style="width:100%;border-collapse:collapse">     <tr><td style="color:#aaa">Arrival</td><td style="text-align:right">09:17</td></tr>     <tr><td style="color:#aaa">Departure</td><td style="text-align:right">09:32</td></tr>     <tr><td style="color:#aaa">Batteries</td><td style="text-align:right">1</td></tr>     <tr><td style="color:#aaa">Sensors</td><td style="text-align:right;font-size:11px">SEN_005</td></tr>   </table> </div> </div>`)[0];
+                popup_74c11918a2b4a373ab8afae382f67676.setContent(html_843b00b842a0117996a36f545e6f9ebd);
+            
+        
+
+        marker_643f9b3ee72152770f099ecb58383e07.bindPopup(popup_74c11918a2b4a373ab8afae382f67676)
+        ;
+
+        
+    
+    
+            marker_643f9b3ee72152770f099ecb58383e07.bindTooltip(
+                `<div>
+                     W3 Stop 2: Oslo Syd @ 09:17
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_643f9b3ee72152770f099ecb58383e07.setIcon(div_icon_efc497ffd511a8e028d59e8abc54ac7c);
+            
+    
+            var marker_7924cd30aaa601c0d7e4300da02ca05b = L.marker(
+                [59.825623, 10.735116],
+                {
+}
+            ).addTo(feature_group_b4892fe348192aa99fc79b91772235cf);
+        
+    
+            var div_icon_5848a1b81c992c9d6728cab28904c5df = L.divIcon({
+  "html": "\n\u003cdiv style=\"\n    background:#9900CC;\n    color:#fff;\n    font-weight:bold;\n    font-size:11px;\n    width:20px;height:20px;\n    border-radius:50%;\n    display:flex;\n    align-items:center;\n    justify-content:center;\n    border:2px solid #fff;\n    box-shadow:0 2px 6px rgba(0,0,0,0.5);\n    margin-left:-10px;margin-top:-10px;\n\"\u003e3\u003c/div\u003e",
+  "iconSize": [20, 20],
+  "iconAnchor": [10, 10],
+  "className": "empty",
+});
+        
+    
+        var popup_bfe2cbb9027bd87b29e0804daa72201b = L.popup({
+  "maxWidth": 260,
+});
+
+        
+            
+                var html_ee6414db8d6191396fcb25d1bd8c86c2 = $(`<div id="html_ee6414db8d6191396fcb25d1bd8c86c2" style="width: 100.0%; height: 100.0%;"> <div style="     font-family:'Segoe UI',Arial,sans-serif;     font-size:12px;     background:#1a1a2e;     color:#e0e0e0;     border:1px solid #9900CC;     border-radius:6px;     padding:10px 14px;     min-width:200px; ">   <b style="color:#9900CC">Worker 3 — Stop 3</b><br>   <span style="color:#aaa">Oslo Nord (B004)</span><br><br>   <table style="width:100%;border-collapse:collapse">     <tr><td style="color:#aaa">Arrival</td><td style="text-align:right">10:01</td></tr>     <tr><td style="color:#aaa">Departure</td><td style="text-align:right">10:16</td></tr>     <tr><td style="color:#aaa">Batteries</td><td style="text-align:right">1</td></tr>     <tr><td style="color:#aaa">Sensors</td><td style="text-align:right;font-size:11px">SEN_004</td></tr>   </table> </div> </div>`)[0];
+                popup_bfe2cbb9027bd87b29e0804daa72201b.setContent(html_ee6414db8d6191396fcb25d1bd8c86c2);
+            
+        
+
+        marker_7924cd30aaa601c0d7e4300da02ca05b.bindPopup(popup_bfe2cbb9027bd87b29e0804daa72201b)
+        ;
+
+        
+    
+    
+            marker_7924cd30aaa601c0d7e4300da02ca05b.bindTooltip(
+                `<div>
+                     W3 Stop 3: Oslo Nord @ 10:01
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_7924cd30aaa601c0d7e4300da02ca05b.setIcon(div_icon_5848a1b81c992c9d6728cab28904c5df);
+            
+    
+            var marker_01dc36e9f93c5582492fcc86f59827fb = L.marker(
+                [59.954791, 10.731664],
+                {
+}
+            ).addTo(feature_group_b4892fe348192aa99fc79b91772235cf);
+        
+    
+            var div_icon_12cbb1c0272eab1467977953acb7f26c = L.divIcon({
+  "html": "\n\u003cdiv style=\"\n    background:#FFD700;\n    color:#000;\n    font-weight:bold;\n    font-size:10px;\n    padding:3px 6px;\n    border-radius:4px;\n    border:2px solid #fff;\n    white-space:nowrap;\n    box-shadow:0 2px 6px rgba(0,0,0,0.5);\n    margin-left:-24px;margin-top:-12px;\n\"\u003eDEPOT\u003c/div\u003e",
+  "iconSize": [48, 24],
+  "iconAnchor": [24, 12],
+  "className": "empty",
+});
+        
+    
+            marker_01dc36e9f93c5582492fcc86f59827fb.bindTooltip(
+                `<div>
+                     Depot (B001 — Oslo Sentrum)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_01dc36e9f93c5582492fcc86f59827fb.setIcon(div_icon_12cbb1c0272eab1467977953acb7f26c);
+            
+    
+            feature_group_b4892fe348192aa99fc79b91772235cf.addTo(map_192862741cb7aca57090544d27d2cf6a);
+        
+    
+            var layer_control_72594758cbfd22a3ea8ed534644b7c7d_layers = {
+                base_layers : {
+                    "cartodbdarkmatter" : tile_layer_6cd032be067ad7b58c824eb9fc390e1b,
+                },
+                overlays :  {
+                    "Sensors" : feature_group_105056e6288713797b4659691e444d7a,
+                    "Worker Routes" : feature_group_b4892fe348192aa99fc79b91772235cf,
+                },
+            };
+            let layer_control_72594758cbfd22a3ea8ed534644b7c7d = L.control.layers(
+                layer_control_72594758cbfd22a3ea8ed534644b7c7d_layers.base_layers,
+                layer_control_72594758cbfd22a3ea8ed534644b7c7d_layers.overlays,
+                {
+  "position": "topright",
+  "collapsed": false,
+  "autoZIndex": true,
+}
+            ).addTo(map_192862741cb7aca57090544d27d2cf6a);
+
+        
+</script>
+</html>

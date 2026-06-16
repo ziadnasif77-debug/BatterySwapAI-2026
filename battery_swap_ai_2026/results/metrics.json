@@ -1,0 +1,12 @@
+{
+  "mae_days": 6.2,
+  "rmse_days": 7.6,
+  "baseline_mae_days": 2.7,
+  "improvement_pct": 47.7,
+  "interval_coverage_pct": 26.5,
+  "success_rate_pct": 28.6,
+  "total_cost_nok": 5328458,
+  "sensors_on_time": 2,
+  "sensors_failed": 1,
+  "recommended_strategy": "AGGRESSIVE"
+}

@@ -1,0 +1,14 @@
+# BatterySwapAI 2026 — Python dependencies
+# Tested on Python 3.11.x
+# Install with: pip install -r requirements.txt
+
+numpy==2.4.6
+pandas==3.0.3
+scipy==1.17.1
+scikit-learn==1.9.0
+lightgbm==4.6.0
+ortools==9.15.6755
+folium==0.20.0
+plotly==6.8.0
+streamlit==1.58.0
+matplotlib==3.11.0

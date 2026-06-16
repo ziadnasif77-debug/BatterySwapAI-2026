@@ -1,0 +1,27 @@
+sensor_id,building_id,building_name,building_type,voltage,risk_score,travel_from_depot
+SEN_009,B009,Bergen Bryggen,office,2.4961,100.0,403.5
+SEN_010,B010,Bergen Sandviken,warehouse,2.4975,100.0,364.7
+SEN_011,B011,Bergen Laksevåg,hospital,2.4969,100.0,364.3
+SEN_012,B012,Bergen Åsane,office,2.4945,100.0,405.0
+SEN_013,B013,Trondheim Midtbyen,hospital,2.4984,100.0,493.6
+SEN_014,B014,Trondheim Nidarvoll,office,2.4954,100.0,493.1
+SEN_015,B015,Trondheim Lade,warehouse,2.492,100.0,507.7
+SEN_016,B016,Trondheim Heimdal,hospital,3.3452,75.4,495.8
+SEN_017,B017,Stavanger Våland,hospital,3.778,37.2,394.5
+SEN_018,B018,Stavanger Hillevåg,warehouse,3.1853,89.5,396.3
+SEN_019,B019,Stavanger Storhaug,warehouse,3.3641,73.8,376.9
+SEN_020,B020,Stavanger Eiganes,office,3.8233,33.2,359.4
+SEN_029,B009,Bergen Bryggen,office,3.2046,87.8,403.5
+SEN_030,B010,Bergen Sandviken,warehouse,2.9815,90.0,364.7
+SEN_031,B011,Bergen Laksevåg,hospital,3.2566,83.2,364.3
+SEN_032,B012,Bergen Åsane,office,3.2134,87.1,405.0
+SEN_033,B013,Trondheim Midtbyen,hospital,3.2652,82.5,493.6
+SEN_034,B014,Trondheim Nidarvoll,office,3.2195,86.5,493.1
+SEN_035,B015,Trondheim Lade,warehouse,3.1859,89.5,507.7
+SEN_036,B016,Trondheim Heimdal,hospital,3.2714,81.9,495.8
+SEN_037,B017,Stavanger Våland,hospital,3.2772,81.4,394.5
+SEN_038,B018,Stavanger Hillevåg,warehouse,3.147,90.0,396.3
+SEN_039,B019,Stavanger Storhaug,warehouse,3.4559,65.7,376.9
+SEN_040,B020,Stavanger Eiganes,office,3.6281,50.5,359.4
+SEN_049,B009,Bergen Bryggen,office,3.5448,57.8,403.5
+SEN_050,B010,Bergen Sandviken,warehouse,3.1805,90.0,364.7
