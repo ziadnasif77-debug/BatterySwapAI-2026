@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>BatterySwapAI 2026 — Pipeline Flowchart</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    padding: 20px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 26px;
+    color: #58a6ff;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #8b949e;
+    font-size: 13px;
+    margin-bottom: 30px;
+  }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+  .leg-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: #c9d1d9;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 20px;
+    padding: 4px 12px;
+  }
+  .leg-dot {
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── Diagram container ── */
+  .diagram-wrap {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 30px 20px;
+    overflow-x: auto;
+    margin-bottom: 40px;
+  }
+  .mermaid { direction: ltr; }
+
+  /* ── Stage cards ── */
+  .stages-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .stage-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 18px 20px;
+    border-left: 4px solid var(--accent);
+  }
+  .stage-card h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .stage-card ul {
+    list-style: none;
+    padding: 0;
+  }
+  .stage-card ul li {
+    font-size: 12.5px;
+    color: #c9d1d9;
+    padding: 3px 0;
+    border-bottom: 1px solid #21262d;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .stage-card ul li:last-child { border-bottom: none; }
+  .badge {
+    font-size: 11px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+    background: #21262d;
+    color: #8b949e;
+    flex-shrink: 0;
+  }
+  .badge.in  { background: #0d2e0d; color: #3fb950; }
+  .badge.out { background: #1a1a2e; color: #58a6ff; }
+  .badge.fail{ background: #2e0d0d; color: #f85149; }
+  .badge.pass{ background: #0d2e22; color: #3fb950; }
+
+  /* ── Metrics bar ── */
+  .metrics-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 30px;
+  }
+  .metric-box {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .metric-box .val {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .metric-box .lbl {
+    font-size: 11px;
+    color: #8b949e;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  h2 {
+    font-size: 16px;
+    color: #c9d1d9;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #30363d;
+    padding-bottom: 6px;
+  }
+</style>
+</head>
+<body>
+
+<h1>🔋 BatterySwapAI 2026 — Pipeline Architecture</h1>
+<p class="subtitle">End-to-end ML pipeline for IoT battery sensor RUL prediction & field service scheduling · Norway · 20 buildings · 50 sensors</p>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="leg-item"><div class="leg-dot" style="background:#1f6feb"></div> Data Sources</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#388bfd"></div> Feature Engineering</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#8957e5"></div> ML Models</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#bc8cff"></div> Uncertainty</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#f78166"></div> Optimization</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#3fb950"></div> Results / Output</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#e3b341"></div> Demo Layer</div>
+</div>
+
+<!-- Main Mermaid Diagram -->
+<div class="diagram-wrap">
+<pre class="mermaid">
+%%{init: {
+  "theme": "dark",
+  "themeVariables": {
+    "primaryColor": "#1f2937",
+    "primaryTextColor": "#e6edf3",
+    "primaryBorderColor": "#374151",
+    "lineColor": "#6b7280",
+    "secondaryColor": "#111827",
+    "tertiaryColor": "#1f2937",
+    "background": "#0d1117",
+    "mainBkg": "#161b22",
+    "nodeBorder": "#30363d",
+    "clusterBkg": "#0d1117",
+    "titleColor": "#58a6ff",
+    "edgeLabelBackground": "#21262d",
+    "fontFamily": "Segoe UI, Arial"
+  }
+}}%%
+
+flowchart TD
+
+  %% ─── RAW DATA ────────────────────────────────────────────────
+  subgraph RAW ["📂  RAW DATA SOURCES"]
+    direction LR
+    SR["📊 sensor_readings.csv
+    50 sensors × 20 buildings
+    voltage · temp · timestamp
+    end_of_life_date"]
+    BLD["🏢 buildings.csv
+    building_id · type
+    hospital / office / warehouse
+    lat · lon"]
+    TT["🗺️ travel_times.csv
+    20×20 matrix
+    minutes between buildings"]
+  end
+
+  %% ─── FEATURE ENGINEERING ────────────────────────────────────
+  subgraph FEAT ["⚙️  STAGE 1 — FEATURE ENGINEERING  (model/feature_pipeline.py)"]
+    direction TB
+    FP1["Compute voltage_pct
+    (voltage − 2.5V) / (4.2 − 2.5) × 100"]
+    FP2["Rolling statistics
+    7d & 30d mean · std · min · max"]
+    FP3["Voltage drop rate
+    Δvoltage / Δtime"]
+    FP4["Building-type encoding
+    hospital=1.5 · office=1.0 · warehouse=0.8"]
+    FP5["📄 features_full.csv
+    30+ features · 5,000+ rows"]
+    FP1 --> FP2 --> FP3 --> FP4 --> FP5
+  end
+
+  %% ─── BASELINE ───────────────────────────────────────────────
+  subgraph BASE ["📏  STAGE 2 — BASELINE  (model/baseline.py)"]
+    B1["Heuristic: voltage → RUL
+    If voltage ≤ 2.6V → RUL = 0
+    Else linear extrapolation"]
+    B2["MAE = 2.7 days
+    Reference benchmark"]
+    B1 --> B2
+  end
+
+  %% ─── LIGHTGBM ───────────────────────────────────────────────
+  subgraph LGB ["🤖  STAGE 3 — LIGHTGBM MODEL  (model/train.py)"]
+    direction TB
+    L1["Time-series split 80/20
+    Train ≤ Sept 2025
+    Test  > Oct 2025 + 7d gap"]
+    L2["LightGBM Regressor
+    n_estimators=1000
+    early_stopping=50
+    learning_rate=0.03"]
+    L3["Isotonic Regression
+    Calibration by building type
+    Reduces bias: 8.99 → 0.08 days"]
+    L4["lightgbm_model.pkl
+    MAE=6.2d calibrated  R²=0.86"]
+    L1 --> L2 --> L3 --> L4
+  end
+
+  %% ─── UNCERTAINTY ────────────────────────────────────────────
+  subgraph UNC ["📊  STAGE 4 — UNCERTAINTY QUANTIFICATION  (model/uncertainty.py)"]
+    direction TB
+    U1["Quantile Regression
+    HistGradientBoosting
+    α=0.10 lower · α=0.90 upper"]
+    U2["Conformal Calibration
+    Binary search scale factor
+    scale=2.98× → coverage ≥ 80%"]
+    U3["Failure Probabilities
+    Normal CDF model
+    std = interval_width / 3.29
+    p_fail_3d · p_fail_7d · p_fail_14d ∈ [0,1]"]
+    U4["full_predictions.csv
+    rul_predicted · rul_lower_90 · rul_upper_90
+    interval_width · confidence · p_fail_*"]
+    U1 --> U2 --> U3 --> U4
+  end
+
+  %% ─── PRIORITY ───────────────────────────────────────────────
+  subgraph PRI ["🎯  STAGE 5 — RISK & PRIORITY SCORING  (optimization/priority.py)"]
+    direction TB
+    P1["compute_risk_score
+    base = p_fail_7d×6000 + p_fail_3d×3000
+          + (100−voltage_pct)×0.10
+    × building_weight
+    Special: voltage≤0 → 100  RUL≤1 → 95"]
+    P2["assign_risk_color
+    ≥100 → DEAD   gray
+    >70  → CRITICAL  red
+    >40  → WARNING  orange
+    ≤40  → SAFE   green"]
+    P3["compute_priority_score
+    risk × weight
+    + cluster_bonus (×5 per nearby risk>60)
+    + recency_bonus (+10 RUL≤1, +5 RUL≤3)"]
+    P4["prioritized_sensors.csv
+    Sorted by priority_score DESC
+    risk_score · risk_color · priority_rank"]
+    P1 --> P2 --> P3 --> P4
+  end
+
+  %% ─── SCHEDULER ──────────────────────────────────────────────
+  subgraph SCHED ["🚗  STAGE 6 — VRP SCHEDULER  (optimization/scheduler.py)"]
+    direction TB
+    S1["Reachability Filter
+    travel_from_depot > 200 min
+    → unreachable_sensors.csv
+    Bergen · Trondheim · Stavanger"]
+    S2["VRP Problem Setup
+    Depot = B001 Oslo
+    3 workers · 480 min shift
+    15 min service/stop"]
+    S3["OR-Tools Solver
+    PATH_CHEAPEST_ARC
+    + GUIDED_LOCAL_SEARCH
+    time_limit = 30s"]
+    S4["work_orders.csv
+    worker_id · stop_number · building_id
+    arrival_time · departure_time · sensor_ids"]
+    S1 --> S2 --> S3 --> S4
+  end
+
+  %% ─── SIMULATOR ──────────────────────────────────────────────
+  subgraph SIM ["💡  STAGE 7 — OUTCOME SIMULATION  (optimization/simulator.py)"]
+    direction LR
+    SC1["AGGRESSIVE
+    p_fail_7d > 0.3%"]
+    SC2["NORMAL
+    p_fail_7d > 1.0%"]
+    SC3["CONSERVATIVE
+    p_fail_7d > 5.0%"]
+    SCOST["Cost Model
+    Labor: travel_hours × 500 NOK
+    Downtime: hours × 2000 NOK
+    Outcome: SUCCESS / FAILURE
+             MISSED / LOW_PRIORITY"]
+    SREC["scenario_comparison.json
+    Recommended = lowest total cost"]
+    SC1 & SC2 & SC3 --> SCOST --> SREC
+  end
+
+  %% ─── OUTPUT FILES ───────────────────────────────────────────
+  subgraph OUT ["📁  STAGE 8 — OUTPUT FILES"]
+    direction LR
+    O1["predictions.csv
+    ALL 50 sensors
+    RUL · risk · p_fail_7d"]
+    O2["work_orders.csv
+    7+ stops · 3 workers"]
+    O3["unreachable_sensors.csv
+    26 remote sensors"]
+    O4["metrics.json
+    MAE · R² · coverage · cost"]
+  end
+
+  %% ─── DEMO ───────────────────────────────────────────────────
+  subgraph DEMO ["🗺️  STAGE 9 — DEMO LAYER"]
+    direction LR
+    D1["map_builder.py
+    Folium interactive map
+    Colored markers per risk
+    Worker route polylines
+    → battery_map.html"]
+    D2["dashboard.py
+    Streamlit 4-tab app
+    Fleet Overview · Risk Analysis
+    Scheduling · Cost Scenarios"]
+  end
+
+  %% ─── FLOW CONNECTIONS ───────────────────────────────────────
+  SR --> FEAT
+  BLD --> FEAT
+  BLD --> SCHED
+  TT --> SCHED
+
+  FEAT --> BASE
+  FEAT --> LGB
+  LGB --> UNC
+  FEAT --> UNC
+
+  UNC --> PRI
+  BLD --> PRI
+
+  PRI --> SCHED
+  UNC --> SCHED
+
+  SCHED --> SIM
+  UNC --> SIM
+  BLD --> SIM
+  TT --> SIM
+
+  UNC --> OUT
+  PRI --> OUT
+  SCHED --> OUT
+  SIM --> OUT
+
+  OUT --> DEMO
+  SCHED --> DEMO
+
+  %% ─── STYLES ─────────────────────────────────────────────────
+  classDef dataNode   fill:#0d2e4d,stroke:#1f6feb,color:#cae8ff
+  classDef featNode   fill:#0d1f3c,stroke:#388bfd,color:#9ecbff
+  classDef mlNode     fill:#1a0a2e,stroke:#8957e5,color:#d2a8ff
+  classDef uncNode    fill:#22103b,stroke:#bc8cff,color:#e2c0ff
+  classDef optNode    fill:#2e1505,stroke:#f78166,color:#ffc5bc
+  classDef outNode    fill:#0d2e0d,stroke:#3fb950,color:#aff5b4
+  classDef demoNode   fill:#2e2005,stroke:#e3b341,color:#f8e3a3
+
+  class SR,BLD,TT dataNode
+  class FP1,FP2,FP3,FP4,FP5 featNode
+  class B1,B2 featNode
+  class L1,L2,L3,L4 mlNode
+  class U1,U2,U3,U4 uncNode
+  class P1,P2,P3,P4 optNode
+  class S1,S2,S3,S4 optNode
+  class SC1,SC2,SC3,SCOST,SREC optNode
+  class O1,O2,O3,O4 outNode
+  class D1,D2 demoNode
+</pre>
+</div>
+
+<!-- Key Metrics -->
+<h2>📊 Key Performance Metrics</h2>
+<div class="metrics-bar" style="margin-bottom:30px">
+  <div class="metric-box" style="--accent:#3fb950">
+    <div class="val">45/46</div>
+    <div class="lbl">Test Checks Passed</div>
+  </div>
+  <div class="metric-box" style="--accent:#58a6ff">
+    <div class="val">50</div>
+    <div class="lbl">Sensors Monitored</div>
+  </div>
+  <div class="metric-box" style="--accent:#58a6ff">
+    <div class="val">20</div>
+    <div class="lbl">Buildings (Norway)</div>
+  </div>
+  <div class="metric-box" style="--accent:#bc8cff">
+    <div class="val">6.2 d</div>
+    <div class="lbl">Calibrated MAE</div>
+  </div>
+  <div class="metric-box" style="--accent:#bc8cff">
+    <div class="val">0.86</div>
+    <div class="lbl">R² Score</div>
+  </div>
+  <div class="metric-box" style="--accent:#bc8cff">
+    <div class="val">80%</div>
+    <div class="lbl">Interval Coverage</div>
+  </div>
+  <div class="metric-box" style="--accent:#f78166">
+    <div class="val">7</div>
+    <div class="lbl">Work Order Stops</div>
+  </div>
+  <div class="metric-box" style="--accent:#f78166">
+    <div class="val">26</div>
+    <div class="lbl">Unreachable Sensors</div>
+  </div>
+</div>
+
+<!-- Stage Detail Cards -->
+<h2>🔍 Stage-by-Stage Detail</h2>
+<div class="stages-grid">
+
+  <div class="stage-card" style="--accent:#1f6feb">
+    <h3>📂 Stage 0 — Raw Data</h3>
+    <ul>
+      <li>sensor_readings.csv <span class="badge in">INPUT</span></li>
+      <li>50 sensors · 20 buildings <span class="badge">5,000+ rows</span></li>
+      <li>buildings.csv (type + GPS) <span class="badge in">INPUT</span></li>
+      <li>travel_times.csv (20×20 matrix) <span class="badge in">INPUT</span></li>
+      <li>Voltage range: 2.49V–4.20V <span class="badge">dead @ 2.5V</span></li>
+    </ul>
+  </div>
+
+  <div class="stage-card" style="--accent:#388bfd">
+    <h3>⚙️ Stage 1 — Feature Engineering</h3>
+    <ul>
+      <li>model/feature_pipeline.py <span class="badge">Python</span></li>
+      <li>voltage_pct (0–100%) <span class="badge out">KEY FEAT</span></li>
+      <li>Rolling 7d / 30d stats <span class="badge out">KEY FEAT</span></li>
+      <li>Voltage drop rate <span class="badge out">KEY FEAT</span></li>
+      <li>features_full.csv (30+ cols) <span class="badge out">OUTPUT</span></li>
+    </ul>
+  </div>
+
+  <div class="stage-card" style="--accent:#6e40c9">
+    <h3>📏 Stage 2 — Baseline Model</h3>
+    <ul>
+      <li>model/baseline.py <span class="badge">Python</span></li>
+      <li>Heuristic voltage → RUL <span class="badge">rule-based</span></li>
+      <li>MAE = 2.7 days <span class="badge out">BENCHMARK</span></li>
+      <li>All 50 sensors covered <span class="badge pass">PASS 2.4</span></li>
+    </ul>
+  </div>
+
+  <div class="stage-card" style="--accent:#8957e5">
+    <h3>🤖 Stage 3 — LightGBM</h3>
+    <ul>
+      <li>model/train.py <span class="badge">Python</span></li>
+      <li>n_estimators=1000 + early stop <span class="badge">config</span></li>
+      <li>Bias reduced 8.99 → 0.08 days <span class="badge pass">PASS 4.6</span></li>
+      <li>R² = 0.86 <span class="badge pass">PASS 4.4</span></li>
+      <li>Raw MAE = 11.9d (15 dead sensors) <span class="badge fail">FAIL 4.3</span></li>
+    </ul>
+  </div>
+
+  <div class="stage-card" style="--accent:#bc8cff">
+    <h3>📊 Stage 4 — Uncertainty</h3>
+    <ul>
+      <li>model/uncertainty.py <span class="badge">Python</span></li>
+      <li>Quantile regression (α=0.10 / 0.90) <span class="badge pass">PASS 5.4/5.5</span></li>
+      <li>Conformal calib: scale=2.98× <span class="badge pass">PASS 5.7</span></li>
+      <li>p_fail ∈ [0,1] (not %) <span class="badge pass">PASS 5.6</span></li>
+      <li>full_predictions.csv <span class="badge out">OUTPUT</span></li>
+    </ul>
+  </div>
+
+  <div class="stage-card" style="--accent:#f78166">
+    <h3>🎯 Stage 5 — Priority Scoring</h3>
+    <ul>
+      <li>optimization/priority.py <span class="badge">Python</span></li>
+      <li>risk = p_fail_7d×6000 + p_fail_3d×3000 <span class="badge">formula</span></li>
+      <li>× building weight (hosp=1.5) <span class="badge">formula</span></li>
+      <li>DEAD/CRITICAL/WARNING/SAFE <span class="badge pass">PASS 6.4</span></li>
+      <li>prioritized_sensors.csv <span class="badge out">OUTPUT</span></li>
+    </ul>
+  </div>
+
+  <div class="stage-card" style="--accent:#f78166">
+    <h3>🚗 Stage 6 — VRP Scheduler</h3>
+    <ul>
+      <li>optimization/scheduler.py <span class="badge">Python</span></li>
+      <li>Unreachable: travel > 200 min <span class="badge">26 sensors</span></li>
+      <li>OR-Tools VRP · 3 workers · 480 min <span class="badge">config</span></li>
+      <li>7 stops scheduled <span class="badge pass">PASS 8.3</span></li>
+      <li>work_orders.csv + unreachable.csv <span class="badge out">OUTPUT</span></li>
+    </ul>
+  </div>
+
+  <div class="stage-card" style="--accent:#f78166">
+    <h3>💡 Stage 7 — Simulation</h3>
+    <ul>
+      <li>optimization/simulator.py <span class="badge">Python</span></li>
+      <li>3 scenarios: AGG / NORM / CONS <span class="badge pass">PASS 6.11</span></li>
+      <li>Labor cost: 500 NOK/hr <span class="badge">config</span></li>
+      <li>Downtime cost: 2000 NOK/hr <span class="badge">config</span></li>
+      <li>scenario_comparison.json <span class="badge out">OUTPUT</span></li>
+    </ul>
+  </div>
+
+  <div class="stage-card" style="--accent:#3fb950">
+    <h3>📁 Stage 8 — Output Files</h3>
+    <ul>
+      <li>predictions.csv — 50 sensors <span class="badge pass">PASS 8.1</span></li>
+      <li>work_orders.csv — 7 stops <span class="badge pass">PASS 8.3</span></li>
+      <li>unreachable_sensors.csv — 26 sensors <span class="badge pass">PASS 6.8</span></li>
+      <li>metrics.json — performance <span class="badge pass">PASS 8.4</span></li>
+      <li>scenario_comparison.json <span class="badge pass">PASS 6.9</span></li>
+    </ul>
+  </div>
+
+  <div class="stage-card" style="--accent:#e3b341">
+    <h3>🗺️ Stage 9 — Demo Layer</h3>
+    <ul>
+      <li>demo/map_builder.py → battery_map.html <span class="badge pass">PASS 7.1</span></li>
+      <li>Colored markers (risk category) <span class="badge pass">PASS 7.2</span></li>
+      <li>Worker route polylines <span class="badge pass">PASS 7.3</span></li>
+      <li>demo/dashboard.py (Streamlit) <span class="badge pass">PASS 7.4</span></li>
+      <li>4 tabs: Fleet · Risk · Schedule · Cost <span class="badge out">DEMO</span></li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- Data Flow Table -->
+<h2>🔗 Data Flow Between Stages</h2>
+<div style="overflow-x:auto; margin-bottom:30px">
+<table style="width:100%;border-collapse:collapse;font-size:12.5px;direction:ltr">
+  <thead>
+    <tr style="background:#21262d;color:#8b949e;text-align:left">
+      <th style="padding:10px 14px;border-bottom:1px solid #30363d">Stage</th>
+      <th style="padding:10px 14px;border-bottom:1px solid #30363d">Module</th>
+      <th style="padding:10px 14px;border-bottom:1px solid #30363d">Input</th>
+      <th style="padding:10px 14px;border-bottom:1px solid #30363d">Output</th>
+      <th style="padding:10px 14px;border-bottom:1px solid #30363d">Key Check</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="border-bottom:1px solid #21262d">
+      <td style="padding:9px 14px;color:#58a6ff">1</td>
+      <td style="padding:9px 14px;color:#c9d1d9">feature_pipeline.py</td>
+      <td style="padding:9px 14px;color:#8b949e">sensor_readings.csv</td>
+      <td style="padding:9px 14px;color:#3fb950">features_full.csv</td>
+      <td style="padding:9px 14px"><span class="badge pass">3.4 — 30+ features</span></td>
+    </tr>
+    <tr style="border-bottom:1px solid #21262d">
+      <td style="padding:9px 14px;color:#58a6ff">2</td>
+      <td style="padding:9px 14px;color:#c9d1d9">baseline.py</td>
+      <td style="padding:9px 14px;color:#8b949e">sensor_readings.csv</td>
+      <td style="padding:9px 14px;color:#3fb950">baseline_predictions.csv</td>
+      <td style="padding:9px 14px"><span class="badge pass">2.3 — MAE valid</span></td>
+    </tr>
+    <tr style="border-bottom:1px solid #21262d">
+      <td style="padding:9px 14px;color:#58a6ff">3</td>
+      <td style="padding:9px 14px;color:#c9d1d9">train.py</td>
+      <td style="padding:9px 14px;color:#8b949e">features_full.csv</td>
+      <td style="padding:9px 14px;color:#3fb950">lightgbm_model.pkl</td>
+      <td style="padding:9px 14px"><span class="badge pass">4.4 — R²>0.5</span></td>
+    </tr>
+    <tr style="border-bottom:1px solid #21262d">
+      <td style="padding:9px 14px;color:#58a6ff">4</td>
+      <td style="padding:9px 14px;color:#c9d1d9">uncertainty.py</td>
+      <td style="padding:9px 14px;color:#8b949e">lightgbm_model.pkl + features_full.csv</td>
+      <td style="padding:9px 14px;color:#3fb950">full_predictions.csv</td>
+      <td style="padding:9px 14px"><span class="badge pass">5.6/5.7 — probs+coverage</span></td>
+    </tr>
+    <tr style="border-bottom:1px solid #21262d">
+      <td style="padding:9px 14px;color:#58a6ff">5</td>
+      <td style="padding:9px 14px;color:#c9d1d9">priority.py</td>
+      <td style="padding:9px 14px;color:#8b949e">full_predictions.csv + buildings.csv</td>
+      <td style="padding:9px 14px;color:#3fb950">prioritized_sensors.csv</td>
+      <td style="padding:9px 14px"><span class="badge pass">6.3/6.4 — risk scores</span></td>
+    </tr>
+    <tr style="border-bottom:1px solid #21262d">
+      <td style="padding:9px 14px;color:#58a6ff">6</td>
+      <td style="padding:9px 14px;color:#c9d1d9">scheduler.py</td>
+      <td style="padding:9px 14px;color:#8b949e">prioritized + travel_times + buildings</td>
+      <td style="padding:9px 14px;color:#3fb950">work_orders.csv + unreachable.csv</td>
+      <td style="padding:9px 14px"><span class="badge pass">6.6/6.8 — covered</span></td>
+    </tr>
+    <tr style="border-bottom:1px solid #21262d">
+      <td style="padding:9px 14px;color:#58a6ff">7</td>
+      <td style="padding:9px 14px;color:#c9d1d9">simulator.py</td>
+      <td style="padding:9px 14px;color:#8b949e">full_predictions + work_orders + buildings</td>
+      <td style="padding:9px 14px;color:#3fb950">scenario_comparison.json</td>
+      <td style="padding:9px 14px"><span class="badge pass">6.11 — 3 scenarios</span></td>
+    </tr>
+    <tr>
+      <td style="padding:9px 14px;color:#58a6ff">9</td>
+      <td style="padding:9px 14px;color:#c9d1d9">map_builder.py</td>
+      <td style="padding:9px 14px;color:#8b949e">predictions.csv + work_orders.csv</td>
+      <td style="padding:9px 14px;color:#3fb950">battery_map.html</td>
+      <td style="padding:9px 14px"><span class="badge pass">7.1/7.2/7.3</span></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p style="text-align:center;color:#6e7681;font-size:11px;padding-bottom:10px">
+  BatterySwapAI 2026 · Ziad Nasif · Oslo, Norway · Score 45/46
+</p>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' }
+  });
+</script>
+</body>
+</html>
