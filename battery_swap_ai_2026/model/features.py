@@ -4,11 +4,13 @@ F01 — Voltage Slope Features
 F02 — Rolling Voltage Statistics
 F03 — Temperature Impact Features
 F04 — Lifecycle Position Features
+F05 — Curve Shape Features
 """
 
 import numpy as np
 import pandas as pd
 from scipy.stats import linregress
+from scipy.optimize import curve_fit
 from pathlib import Path
 
 
@@ -413,6 +415,125 @@ def add_lifecycle_features(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def _exp_decay_model(t: np.ndarray, a: float, b: float, c: float) -> np.ndarray:
+    return a * np.exp(-b * t) + c
+
+
+def fit_exponential_decay(sensor_df: pd.DataFrame) -> dict:
+    """
+    Fits exponential decay model to voltage curve.
+
+    Physics:
+    Battery voltage follows: V(t) = a * exp(-b * t) + c
+    where:
+      a = initial voltage above floor
+      b = decay rate (HIGH b = fast dying battery)
+      c = floor voltage (predicted minimum before cell death)
+
+    Phases:
+    Phase 1 (healthy):  lifecycle_position < 0.4, slow decay
+    Phase 2 (aging):    lifecycle_position 0.4–0.7, moderate decay
+    Phase 3 (critical): lifecycle_position > 0.7, fast decay
+    """
+    base = {
+        "curve_fit_ok":    0,
+        "decay_rate":      np.nan,
+        "decay_floor":     np.nan,
+        "decay_amplitude": np.nan,
+        "decay_phase":     np.nan,
+        "days_to_floor":   np.nan,
+    }
+    if sensor_df.empty:
+        return base
+
+    df = sensor_df.copy().sort_values("timestamp").reset_index(drop=True)
+
+    # decay_phase from lifecycle_position (always computable)
+    v_arr     = df["voltage"].values
+    v_current = float(v_arr[-1])
+    v_max_ever = float(v_arr.max())
+    denom     = v_max_ever - DEAD_THRESHOLD
+    if denom > 0:
+        lc_pos = float(np.clip(1.0 - (v_current - DEAD_THRESHOLD) / denom, 0.0, 1.0))
+    else:
+        lc_pos = 0.5
+    decay_phase = 1 if lc_pos < 0.4 else (2 if lc_pos < 0.7 else 3)
+    base["decay_phase"] = float(decay_phase)
+
+    if len(df) < 10:
+        return base
+
+    t0     = df["timestamp"].iloc[0]
+    t_days = (df["timestamp"] - t0).dt.total_seconds() / 86400.0
+    t_vals = t_days.values
+    v_vals = v_arr
+
+    v_min = v_vals.min()
+    v_range = v_vals.max() - v_min
+    a0 = max(v_range, 0.1)
+    b0 = 0.005
+    c0 = max(v_min - 0.05, 0.0)
+
+    try:
+        popt, _ = curve_fit(
+            _exp_decay_model, t_vals, v_vals,
+            p0=[a0, b0, c0],
+            bounds=([0.0, 1e-6, 0.0], [10.0, 1.0, 5.0]),
+            maxfev=5000,
+        )
+        a, b, c = float(popt[0]), float(popt[1]), float(popt[2])
+
+        if b > 0 and a > 0:
+            total_time_to_floor = (-1.0 / b) * np.log(0.1 / a)
+            current_elapsed     = float(t_vals[-1])
+            days_to_floor       = float(np.clip(total_time_to_floor - current_elapsed, 0.0, 999.0))
+        else:
+            days_to_floor = 999.0
+
+        return {
+            "curve_fit_ok":    1,
+            "decay_rate":      b,
+            "decay_floor":     c,
+            "decay_amplitude": a,
+            "decay_phase":     float(decay_phase),
+            "days_to_floor":   days_to_floor,
+        }
+    except Exception:
+        return base
+
+
+def add_curve_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add F05 exponential curve shape columns to the full sensor DataFrame.
+
+    Strictly backward-looking: each row receives features computed only
+    from readings up to and including its own timestamp.
+
+    New columns (6 total):
+        curve_fit_ok, decay_rate, decay_floor, decay_amplitude,
+        decay_phase, days_to_floor
+    """
+    df = df.copy().sort_values(["sensor_id", "timestamp"]).reset_index(drop=True)
+
+    result_rows = []
+
+    for sensor_id, sensor_df in df.groupby("sensor_id", sort=False):
+        sensor_df = sensor_df.sort_values("timestamp").reset_index(drop=True)
+
+        feat_list = []
+        for i in range(len(sensor_df)):
+            past = sensor_df.iloc[: i + 1]
+            feat_list.append(fit_exponential_decay(past))
+
+        feat_df  = pd.DataFrame(feat_list, index=sensor_df.index)
+        combined = pd.concat([sensor_df, feat_df], axis=1)
+        result_rows.append(combined)
+
+    out = pd.concat(result_rows, ignore_index=True)
+    out = out.sort_values(["sensor_id", "timestamp"]).reset_index(drop=True)
+    return out
+
+
 def _nan_check(df_feat: pd.DataFrame, cols: list, label: str) -> int:
     violations = 0
     for sid, grp in df_feat.groupby("sensor_id"):
@@ -510,9 +631,33 @@ if __name__ == "__main__":
         print(f"F04 NaN check FAILED — {v} sensor(s).")
     print(f"F04 complete. New columns: {f04_cols}")
 
+    # ── F05 ──────────────────────────────────────────────────────────────────
+    print("\nComputing F05 curve shape features (exponential decay fit)...")
+    df_feat = add_curve_features(df_feat)
+
+    f05_cols = [
+        "curve_fit_ok", "decay_rate", "decay_floor",
+        "decay_amplitude", "decay_phase", "days_to_floor",
+    ]
+    print("\nF05 — first 15 rows (curve cols, starting where fit starts):")
+    subset = df_feat[df_feat["sensor_id"] == "SEN_001"].head(15)
+    print(subset[["sensor_id", "timestamp", "voltage"] + f05_cols].to_string(index=False))
+
+    # curve_fit_ok and decay_phase are always set; fit params are conditional
+    f05_dense_cols = ["curve_fit_ok", "decay_phase"]
+    v = _nan_check(df_feat, f05_dense_cols, "F05")
+    if v == 0:
+        print("F05 NaN check PASSED (fit params excluded — conditional on curve_fit_ok).")
+    else:
+        print(f"F05 NaN check FAILED — {v} sensor(s).")
+
+    fit_rate = df_feat["curve_fit_ok"].mean() * 100
+    print(f"F05 curve fit success rate: {fit_rate:.1f}% of rows")
+    print(f"F05 complete. New columns: {f05_cols}")
+
     # ── Summary ───────────────────────────────────────────────────────────────
-    all_feat_cols = f01_cols + f02_cols + f03_cols + f04_cols
-    print(f"\nF04 complete. Total features so far: {len(all_feat_cols)}")
+    all_feat_cols = f01_cols + f02_cols + f03_cols + f04_cols + f05_cols
+    print(f"\nF05 complete. Total features so far: {len(all_feat_cols)}")
     print(f"Total rows in feature DataFrame: {len(df_feat):,}")
     print("\nAll feature column dtypes:")
     print(df_feat[all_feat_cols].dtypes.to_string())
