@@ -1,6 +1,7 @@
 """
 model/features.py
 F01 — Voltage Slope Features
+F02 — Rolling Voltage Statistics
 """
 
 import numpy as np
@@ -108,40 +109,163 @@ def add_slope_features(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def compute_rolling_voltage_stats(sensor_df: pd.DataFrame) -> dict:
+    """
+    Computes statistical summary of voltage in rolling windows.
+
+    Physics:
+    - mean = average health level
+    - std  = instability (high std = erratic battery = near death)
+    - min  = worst moment (lowest voltage reached recently)
+    - drop = total deterioration in window
+
+    Windows: 7d, 14d, 30d  →  voltage_mean_{w}d, voltage_std_{w}d,
+                               voltage_min_{w}d, voltage_drop_{w}d
+
+    Overall (no window):
+    - voltage_current   : latest voltage reading
+    - voltage_max_ever  : highest voltage ever recorded
+    - voltage_min_ever  : lowest voltage ever recorded
+    - voltage_range_all : max_ever − min_ever
+    - voltage_pct       : (current − 2.5) / (max_ever − 2.5) × 100
+                          (100% = full, 0% = dead)
+    """
+    nan_keys = (
+        [f"voltage_{stat}_{w}d" for w in (7, 14, 30) for stat in ("mean", "std", "min", "drop")]
+        + ["voltage_current", "voltage_max_ever", "voltage_min_ever",
+           "voltage_range_all", "voltage_pct"]
+    )
+    if sensor_df.empty:
+        return {k: np.nan for k in nan_keys}
+
+    df = sensor_df.copy().sort_values("timestamp").reset_index(drop=True)
+    last_ts = df["timestamp"].iloc[-1]
+
+    result = {}
+
+    for w in (7, 14, 30):
+        cutoff = last_ts - pd.Timedelta(days=w)
+        win = df[df["timestamp"] >= cutoff]["voltage"]
+
+        if len(win) < 2:
+            result[f"voltage_mean_{w}d"] = np.nan
+            result[f"voltage_std_{w}d"]  = np.nan
+            result[f"voltage_min_{w}d"]  = np.nan
+            result[f"voltage_drop_{w}d"] = np.nan
+        else:
+            result[f"voltage_mean_{w}d"] = float(win.mean())
+            result[f"voltage_std_{w}d"]  = float(win.std(ddof=1))
+            result[f"voltage_min_{w}d"]  = float(win.min())
+            result[f"voltage_drop_{w}d"] = float(win.iloc[0] - win.iloc[-1])
+
+    current   = float(df["voltage"].iloc[-1])
+    max_ever  = float(df["voltage"].max())
+    min_ever  = float(df["voltage"].min())
+    denom     = max_ever - DEAD_THRESHOLD
+    pct       = (current - DEAD_THRESHOLD) / denom * 100.0 if denom > 0 else np.nan
+
+    result["voltage_current"]   = current
+    result["voltage_max_ever"]  = max_ever
+    result["voltage_min_ever"]  = min_ever
+    result["voltage_range_all"] = max_ever - min_ever
+    result["voltage_pct"]       = float(np.clip(pct, 0.0, 100.0)) if not np.isnan(pct) else np.nan
+
+    return result
+
+
+def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add F02 rolling voltage stat columns to the full sensor DataFrame.
+
+    Same backward-looking pattern as add_slope_features: each row receives
+    stats computed only from readings up to and including its own timestamp.
+
+    New columns (13 total):
+        voltage_mean_7d,  voltage_std_7d,  voltage_min_7d,  voltage_drop_7d
+        voltage_mean_14d, voltage_std_14d, voltage_min_14d, voltage_drop_14d
+        voltage_mean_30d, voltage_std_30d, voltage_min_30d, voltage_drop_30d
+        voltage_current, voltage_max_ever, voltage_min_ever,
+        voltage_range_all, voltage_pct
+    """
+    df = df.copy().sort_values(["sensor_id", "timestamp"]).reset_index(drop=True)
+
+    result_rows = []
+
+    for sensor_id, sensor_df in df.groupby("sensor_id", sort=False):
+        sensor_df = sensor_df.sort_values("timestamp").reset_index(drop=True)
+
+        stats_list = []
+        for i in range(len(sensor_df)):
+            past = sensor_df.iloc[: i + 1]
+            stats_list.append(compute_rolling_voltage_stats(past))
+
+        stats_df = pd.DataFrame(stats_list, index=sensor_df.index)
+        combined  = pd.concat([sensor_df, stats_df], axis=1)
+        result_rows.append(combined)
+
+    out = pd.concat(result_rows, ignore_index=True)
+    out = out.sort_values(["sensor_id", "timestamp"]).reset_index(drop=True)
+    return out
+
+
 # ── Test ─────────────────────────────────────────────────────────────────────
+
+def _nan_check(df_feat: pd.DataFrame, cols: list, label: str) -> int:
+    violations = 0
+    for sid, grp in df_feat.groupby("sensor_id"):
+        grp = grp.sort_values("timestamp").reset_index(drop=True)
+        cutoff = int(len(grp) * 0.20)
+        last_80 = grp.iloc[cutoff:]
+        nan_counts = last_80[cols].isna().sum()
+        bad = nan_counts[nan_counts > 0]
+        if not bad.empty:
+            print(f"  WARNING {sid} [{label}]: NaNs in last 80% — {bad.to_dict()}")
+            violations += 1
+    return violations
+
 
 if __name__ == "__main__":
     print("Loading sensor data...")
     df = pd.read_csv(DATA_PATH, parse_dates=["timestamp"])
     print(f"  Loaded {len(df):,} rows for {df['sensor_id'].nunique()} sensors")
 
-    print("Computing F01 slope features (this may take ~30s)...")
+    # ── F01 ──────────────────────────────────────────────────────────────────
+    print("\nComputing F01 slope features...")
     df_feat = add_slope_features(df)
 
-    new_cols = ["slope_7d", "slope_14d", "slope_30d", "slope_all", "acceleration"]
+    f01_cols = ["slope_7d", "slope_14d", "slope_30d", "slope_all", "acceleration"]
+    print("\nF01 — first 5 rows:")
+    print(df_feat[["sensor_id", "timestamp", "voltage"] + f01_cols].head(5).to_string(index=False))
 
-    print("\nFirst 5 rows (selected columns):")
-    print(df_feat[["sensor_id", "timestamp", "voltage"] + new_cols].head(5).to_string(index=False))
-
-    print(f"\nF01 complete. New columns: {new_cols}")
-
-    # Verify no NaN in last 80% of readings per sensor
-    violations = 0
-    for sid, grp in df_feat.groupby("sensor_id"):
-        grp = grp.sort_values("timestamp").reset_index(drop=True)
-        cutoff = int(len(grp) * 0.20)
-        last_80 = grp.iloc[cutoff:]
-        nan_counts = last_80[new_cols].isna().sum()
-        bad = nan_counts[nan_counts > 0]
-        if not bad.empty:
-            print(f"  WARNING {sid}: NaNs in last 80% — {bad.to_dict()}")
-            violations += 1
-
-    if violations == 0:
-        print("NaN check PASSED — no NaNs in last 80% of any sensor's readings.")
+    v = _nan_check(df_feat, f01_cols, "F01")
+    if v == 0:
+        print("F01 NaN check PASSED.")
     else:
-        print(f"NaN check FAILED — {violations} sensor(s) have NaNs in last 80%.")
+        print(f"F01 NaN check FAILED — {v} sensor(s).")
+    print(f"F01 complete. New columns: {f01_cols}")
 
-    print("\nColumn dtypes:")
-    print(df_feat[new_cols].dtypes.to_string())
-    print(f"\nTotal rows in feature DataFrame: {len(df_feat):,}")
+    # ── F02 ──────────────────────────────────────────────────────────────────
+    print("\nComputing F02 rolling voltage statistics...")
+    df_feat = add_rolling_features(df_feat)
+
+    f02_cols = (
+        [f"voltage_{stat}_{w}d" for w in (7, 14, 30) for stat in ("mean", "std", "min", "drop")]
+        + ["voltage_current", "voltage_max_ever", "voltage_min_ever",
+           "voltage_range_all", "voltage_pct"]
+    )
+    print("\nF02 — first 5 rows (rolling cols):")
+    print(df_feat[["sensor_id", "timestamp", "voltage"] + f02_cols].head(5).to_string(index=False))
+
+    v = _nan_check(df_feat, f02_cols, "F02")
+    if v == 0:
+        print("F02 NaN check PASSED.")
+    else:
+        print(f"F02 NaN check FAILED — {v} sensor(s).")
+    print(f"F02 complete. New columns: {f02_cols}")
+
+    # ── Summary ───────────────────────────────────────────────────────────────
+    all_feat_cols = f01_cols + f02_cols
+    print(f"\nF02 complete. Total features so far: {len(all_feat_cols)}")
+    print(f"Total rows in feature DataFrame: {len(df_feat):,}")
+    print("\nAll feature column dtypes:")
+    print(df_feat[all_feat_cols].dtypes.to_string())
