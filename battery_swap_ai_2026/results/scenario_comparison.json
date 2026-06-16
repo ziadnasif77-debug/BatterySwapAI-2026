@@ -1,0 +1,50 @@
+[
+  {
+    "label": "AGGRESSIVE",
+    "threshold": 0.3,
+    "n_candidates": 5,
+    "n_scheduled": 2,
+    "n_success": 2,
+    "n_missed": 4,
+    "n_failure": 1,
+    "pct_saved": 28.6,
+    "travel_hours": 0.92,
+    "downtime_hours": 2664.0,
+    "labor_cost": 458,
+    "downtime_cost": 5328000,
+    "total_cost": 5328458,
+    "recommended": true
+  },
+  {
+    "label": "NORMAL",
+    "threshold": 1.0,
+    "n_candidates": 4,
+    "n_scheduled": 1,
+    "n_success": 1,
+    "n_missed": 5,
+    "n_failure": 1,
+    "pct_saved": 14.3,
+    "travel_hours": 0.0,
+    "downtime_hours": 2712.0,
+    "labor_cost": 0,
+    "downtime_cost": 5424000,
+    "total_cost": 5424000,
+    "recommended": false
+  },
+  {
+    "label": "CONSERVATIVE",
+    "threshold": 5.0,
+    "n_candidates": 2,
+    "n_scheduled": 0,
+    "n_success": 0,
+    "n_missed": 6,
+    "n_failure": 1,
+    "pct_saved": 0.0,
+    "travel_hours": 0.0,
+    "downtime_hours": 2760.0,
+    "labor_cost": 0,
+    "downtime_cost": 5520000,
+    "total_cost": 5520000,
+    "recommended": false
+  }
+]
