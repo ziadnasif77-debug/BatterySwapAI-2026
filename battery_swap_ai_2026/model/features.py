@@ -2,6 +2,7 @@
 model/features.py
 F01 — Voltage Slope Features
 F02 — Rolling Voltage Statistics
+F03 — Temperature Impact Features
 """
 
 import numpy as np
@@ -210,6 +211,107 @@ def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
 
 # ── Test ─────────────────────────────────────────────────────────────────────
 
+WINTER_MONTHS = {12, 1, 2, 3}
+
+
+def compute_temperature_features(sensor_df: pd.DataFrame) -> dict:
+    """
+    Captures how Norwegian cold affects this specific battery.
+
+    Physics:
+    - Cold temperatures reduce battery chemical activity
+    - Below 0°C: lithium batteries lose 20-30% capacity
+    - Below -10°C: severe degradation, accelerated aging
+    - Buildings in Bergen get more cold-wet, Oslo gets cold-dry
+    - The correlation between voltage drop and temperature
+      tells us how cold-sensitive THIS specific battery is
+    """
+    nan_keys = [
+        "temp_mean_all", "temp_mean_14d", "temp_min_ever", "temp_std_all",
+        "temp_current", "days_below_0", "days_below_minus10",
+        "cold_exposure_pct", "is_winter_now", "volt_temp_corr",
+    ]
+    if sensor_df.empty:
+        return {k: np.nan for k in nan_keys}
+
+    df = sensor_df.copy().sort_values("timestamp").reset_index(drop=True)
+    temps   = df["temperature"]
+    last_ts = df["timestamp"].iloc[-1]
+
+    temp_mean_all = float(temps.mean())
+    temp_std_all  = float(temps.std(ddof=1)) if len(temps) > 1 else np.nan
+    temp_min_ever = float(temps.min())
+    temp_current  = float(temps.iloc[-1])
+
+    cutoff_14d    = last_ts - pd.Timedelta(days=14)
+    win_14        = df[df["timestamp"] >= cutoff_14d]["temperature"]
+    temp_mean_14d = float(win_14.mean()) if len(win_14) >= 1 else np.nan
+
+    days_below_0       = int((temps < 0).sum())
+    days_below_minus10 = int((temps < -10).sum())
+    total_days         = len(df)
+    cold_exposure_pct  = days_below_0 / total_days * 100.0
+
+    is_winter_now = 1 if last_ts.month in WINTER_MONTHS else 0
+
+    if len(df) >= 5:
+        v_std = float(df["voltage"].std())
+        t_std = float(df["temperature"].std())
+        if v_std == 0 or t_std == 0:
+            volt_temp_corr = 0.0  # no variance → assume no detectable correlation
+        else:
+            corr_val = df[["voltage", "temperature"]].corr().iloc[0, 1]
+            volt_temp_corr = float(corr_val) if not np.isnan(corr_val) else 0.0
+    else:
+        volt_temp_corr = np.nan
+
+    return {
+        "temp_mean_all":       temp_mean_all,
+        "temp_mean_14d":       temp_mean_14d,
+        "temp_min_ever":       temp_min_ever,
+        "temp_std_all":        temp_std_all,
+        "temp_current":        temp_current,
+        "days_below_0":        days_below_0,
+        "days_below_minus10":  days_below_minus10,
+        "cold_exposure_pct":   cold_exposure_pct,
+        "is_winter_now":       float(is_winter_now),
+        "volt_temp_corr":      volt_temp_corr,
+    }
+
+
+def add_temperature_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add F03 temperature impact columns to the full sensor DataFrame.
+
+    Strictly backward-looking: each row receives features computed only
+    from readings up to and including its own timestamp.
+
+    New columns (10 total):
+        temp_mean_all, temp_mean_14d, temp_min_ever, temp_std_all,
+        temp_current, days_below_0, days_below_minus10,
+        cold_exposure_pct, is_winter_now, volt_temp_corr
+    """
+    df = df.copy().sort_values(["sensor_id", "timestamp"]).reset_index(drop=True)
+
+    result_rows = []
+
+    for sensor_id, sensor_df in df.groupby("sensor_id", sort=False):
+        sensor_df = sensor_df.sort_values("timestamp").reset_index(drop=True)
+
+        feat_list = []
+        for i in range(len(sensor_df)):
+            past = sensor_df.iloc[: i + 1]
+            feat_list.append(compute_temperature_features(past))
+
+        feat_df  = pd.DataFrame(feat_list, index=sensor_df.index)
+        combined = pd.concat([sensor_df, feat_df], axis=1)
+        result_rows.append(combined)
+
+    out = pd.concat(result_rows, ignore_index=True)
+    out = out.sort_values(["sensor_id", "timestamp"]).reset_index(drop=True)
+    return out
+
+
 def _nan_check(df_feat: pd.DataFrame, cols: list, label: str) -> int:
     violations = 0
     for sid, grp in df_feat.groupby("sensor_id"):
@@ -263,9 +365,28 @@ if __name__ == "__main__":
         print(f"F02 NaN check FAILED — {v} sensor(s).")
     print(f"F02 complete. New columns: {f02_cols}")
 
+    # ── F03 ──────────────────────────────────────────────────────────────────
+    print("\nComputing F03 temperature impact features...")
+    df_feat = add_temperature_features(df_feat)
+
+    f03_cols = [
+        "temp_mean_all", "temp_mean_14d", "temp_min_ever", "temp_std_all",
+        "temp_current", "days_below_0", "days_below_minus10",
+        "cold_exposure_pct", "is_winter_now", "volt_temp_corr",
+    ]
+    print("\nF03 — first 5 rows (temp cols):")
+    print(df_feat[["sensor_id", "timestamp", "temperature"] + f03_cols].head(5).to_string(index=False))
+
+    v = _nan_check(df_feat, f03_cols, "F03")
+    if v == 0:
+        print("F03 NaN check PASSED.")
+    else:
+        print(f"F03 NaN check FAILED — {v} sensor(s).")
+    print(f"F03 complete. New columns: {f03_cols}")
+
     # ── Summary ───────────────────────────────────────────────────────────────
-    all_feat_cols = f01_cols + f02_cols
-    print(f"\nF02 complete. Total features so far: {len(all_feat_cols)}")
+    all_feat_cols = f01_cols + f02_cols + f03_cols
+    print(f"\nF03 complete. Total features so far: {len(all_feat_cols)}")
     print(f"Total rows in feature DataFrame: {len(df_feat):,}")
     print("\nAll feature column dtypes:")
     print(df_feat[all_feat_cols].dtypes.to_string())
