@@ -1,0 +1,8 @@
+sensor_id,building_id,building_type,timestamp,actual_rul,rul_predicted,rul_lower_90,rul_upper_90,interval_width,confidence,p_fail_3d,p_fail_7d,p_fail_14d,voltage_pct,risk_score,risk_color,priority_score,risk_category,priority_rank
+SEN_001,B001,hospital,2026-03-05,0,18.5,18.5,32.2,13.7,LOW,0.0,0.3,14.0,0.0,100.0,#808080,150.0,DEAD,1
+SEN_011,B011,hospital,2025-11-07,0,21.8,12.7,31.4,18.7,LOW,0.0,0.5,8.5,0.0,100.0,#808080,150.0,DEAD,2
+SEN_012,B012,office,2025-10-25,0,9.2,8.6,25.3,16.6,LOW,11.0,33.1,82.9,0.0,100.0,#808080,100.0,DEAD,3
+SEN_004,B004,warehouse,2025-10-06,0,18.5,14.8,31.6,16.8,LOW,0.1,1.2,18.9,0.0,100.0,#808080,80.0,DEAD,4
+SEN_003,B003,warehouse,2025-12-27,0,15.2,11.1,17.4,6.3,MEDIUM,0.0,0.0,26.5,0.0,100.0,#808080,80.0,DEAD,5
+SEN_010,B010,warehouse,2025-12-02,0,20.1,14.7,38.5,23.8,LOW,0.9,3.5,20.0,0.0,100.0,#808080,80.0,DEAD,6
+SEN_005,B005,warehouse,2025-12-09,0,16.9,10.5,18.5,8.1,LOW,0.0,0.0,11.9,0.0,100.0,#808080,80.0,DEAD,7
