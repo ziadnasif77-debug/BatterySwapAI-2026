@@ -1,4 +1,8 @@
 worker_id,stop_number,building_id,building_name,arrival_time,departure_time,n_batteries_to_replace,sensor_ids
-3,1,B003,Oslo Vest,08:19,08:34,1,SEN_003
-3,2,B005,Oslo Syd,09:17,09:32,1,SEN_005
-3,3,B004,Oslo Nord,10:01,10:16,1,SEN_004
+3,1,B002,Oslo Øst,08:17,08:32,3,"SEN_002, SEN_022, SEN_042"
+3,2,B004,Oslo Nord,09:13,09:28,3,"SEN_004, SEN_024, SEN_044"
+3,3,B007,Oslo Grünerløkka,09:36,09:51,3,"SEN_007, SEN_027, SEN_047"
+3,4,B005,Oslo Syd,10:11,10:26,3,"SEN_005, SEN_025, SEN_045"
+3,5,B003,Oslo Vest,11:04,11:19,3,"SEN_003, SEN_023, SEN_043"
+3,6,B008,Oslo Frogner,11:30,11:45,3,"SEN_008, SEN_028, SEN_048"
+3,7,B006,Oslo Aker,11:55,12:10,3,"SEN_006, SEN_026, SEN_046"

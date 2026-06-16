@@ -230,15 +230,16 @@ def compare_scenarios(
 
     Prints comparison table and recommends lowest-cost strategy.
     """
+    # p_fail_7d is now stored as probability [0-1]; thresholds in same scale
     scenarios = [
-        (0.30, "AGGRESSIVE"),
-        (1.00, "NORMAL"),
-        (5.00, "CONSERVATIVE"),
+        (0.003, "AGGRESSIVE"),    # p_fail_7d > 0.3%
+        (0.010, "NORMAL"),         # p_fail_7d > 1.0%
+        (0.050, "CONSERVATIVE"),   # p_fail_7d > 5.0%
     ]
 
     results = []
     for threshold, label in scenarios:
-        print(f"\n  Running scenario: {label} (threshold = {threshold}%)...")
+        print(f"\n  Running scenario: {label} (threshold = {threshold*100:.1f}% p_fail_7d)...")
         r = run_scenario(threshold, label, predictions_df, travel_df,
                          buildings_df, actual_eol)
         results.append(r)
