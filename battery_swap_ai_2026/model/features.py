@@ -43,7 +43,7 @@ def _sensor_slopes(grp: pd.DataFrame) -> pd.DataFrame:
     s7   = gts.rolling("7D",  min_periods=3).apply(_ols_slope, raw=True)
     s14  = gts.rolling("14D", min_periods=3).apply(_ols_slope, raw=True)
     s30  = gts.rolling("30D", min_periods=3).apply(_ols_slope, raw=True)
-    sall = gts.expanding(min_count=3).apply(_ols_slope, raw=True)
+    sall = gts.expanding(min_periods=3).apply(_ols_slope, raw=True)
 
     g["slope_7d"]     = s7.values
     g["slope_14d"]    = s14.values
