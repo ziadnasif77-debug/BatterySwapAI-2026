@@ -20,64 +20,74 @@ BASE      = REPO_ROOT / "battery_swap_ai_2026"
 
 STAGES = [
     {
-        "id":    "s1",
-        "label": "1.  Generate Data",
-        "desc":  "500 sensors · 50 buildings · 6 Norwegian cities",
-        "cmd":   [sys.executable, str(BASE / "data/raw/generate_dummy_data.py")],
+        "id":      "s1",
+        "label":   "1.  Generate Data",
+        "desc":    "500 sensors · 50 buildings · 6 Norwegian cities",
+        "cmd":     [sys.executable, str(BASE / "data/raw/generate_dummy_data.py")],
+        "est_sec": 20,
     },
     {
-        "id":    "s2",
-        "label": "2.  Feature Engineering",
-        "desc":  "30+ rolling voltage / temperature features",
-        "cmd":   [sys.executable, str(BASE / "model/feature_pipeline.py")],
+        "id":      "s2",
+        "label":   "2.  Feature Engineering",
+        "desc":    "30+ rolling voltage / temperature features",
+        "cmd":     [sys.executable, str(BASE / "model/feature_pipeline.py")],
+        "est_sec": 180,
     },
     {
-        "id":    "s3",
-        "label": "3.  Baseline Model",
-        "desc":  "Linear RUL extrapolation · reference MAE",
-        "cmd":   [sys.executable, str(BASE / "model/baseline.py")],
+        "id":      "s3",
+        "label":   "3.  Baseline Model",
+        "desc":    "Linear RUL extrapolation · reference MAE",
+        "cmd":     [sys.executable, str(BASE / "model/baseline.py")],
+        "est_sec": 30,
     },
     {
-        "id":    "s4",
-        "label": "4.  Train LightGBM",
-        "desc":  "RUL regression + isotonic calibration by building type",
-        "cmd":   [sys.executable, str(BASE / "model/train.py")],
+        "id":      "s4",
+        "label":   "4.  Train LightGBM",
+        "desc":    "RUL regression + isotonic calibration by building type",
+        "cmd":     [sys.executable, str(BASE / "model/train.py")],
+        "est_sec": 120,
     },
     {
-        "id":    "s5",
-        "label": "5.  Uncertainty Quantification",
-        "desc":  "Quantile intervals · p_fail_3d / 7d / 14d ∈ [0, 1]",
-        "cmd":   [sys.executable, str(BASE / "model/uncertainty.py")],
+        "id":      "s5",
+        "label":   "5.  Uncertainty Quantification",
+        "desc":    "Quantile intervals · p_fail_3d / 7d / 14d ∈ [0, 1]",
+        "cmd":     [sys.executable, str(BASE / "model/uncertainty.py")],
+        "est_sec": 90,
     },
     {
-        "id":    "s6",
-        "label": "6.  Risk & Priority Scoring",
-        "desc":  "DEAD / CRITICAL / WARNING / SAFE · building-type weights",
-        "cmd":   [sys.executable, str(BASE / "optimization/priority.py")],
+        "id":      "s6",
+        "label":   "6.  Risk & Priority Scoring",
+        "desc":    "DEAD / CRITICAL / WARNING / SAFE · building-type weights",
+        "cmd":     [sys.executable, str(BASE / "optimization/priority.py")],
+        "est_sec": 20,
     },
     {
-        "id":    "s7",
-        "label": "7.  VRP Scheduler",
-        "desc":  "OR-Tools · 3 workers · 480-min shift · unreachable detection",
-        "cmd":   [sys.executable, str(BASE / "optimization/scheduler.py")],
+        "id":      "s7",
+        "label":   "7.  VRP Scheduler",
+        "desc":    "OR-Tools · 3 workers · 480-min shift · unreachable detection",
+        "cmd":     [sys.executable, str(BASE / "optimization/scheduler.py")],
+        "est_sec": 60,
     },
     {
-        "id":    "s8",
-        "label": "8.  Cost Simulation",
-        "desc":  "AGGRESSIVE / NORMAL / CONSERVATIVE · labor + downtime (NOK)",
-        "cmd":   [sys.executable, str(BASE / "optimization/simulator.py")],
+        "id":      "s8",
+        "label":   "8.  Cost Simulation",
+        "desc":    "AGGRESSIVE / NORMAL / CONSERVATIVE · labor + downtime (NOK)",
+        "cmd":     [sys.executable, str(BASE / "optimization/simulator.py")],
+        "est_sec": 20,
     },
     {
-        "id":    "s9",
-        "label": "9.  Build Norway Map",
-        "desc":  "Folium interactive map · risk markers · worker routes",
-        "cmd":   [sys.executable, str(BASE / "demo/map_builder.py")],
+        "id":      "s9",
+        "label":   "9.  Build Norway Map",
+        "desc":    "Folium interactive map · risk markers · worker routes",
+        "cmd":     [sys.executable, str(BASE / "demo/map_builder.py")],
+        "est_sec": 30,
     },
     {
-        "id":    "s10",
-        "label": "10. Run Test Suite",
-        "desc":  "46-check end-to-end pipeline validation · PASS / FAIL report",
-        "cmd":   [sys.executable, str(REPO_ROOT / "test_full_pipeline.py")],
+        "id":      "s10",
+        "label":   "10. Run Test Suite",
+        "desc":    "46-check end-to-end pipeline validation · PASS / FAIL report",
+        "cmd":     [sys.executable, str(REPO_ROOT / "test_full_pipeline.py")],
+        "est_sec": 120,
     },
 ]
 
@@ -304,18 +314,17 @@ class PipelineRunner(tk.Tk):
     def _tick(self, sid):
         if self.states[sid] != "running":
             return
-        elapsed = time.time() - self.start_times.get(sid, time.time())
-        est     = self.durations.get(sid)
-        w       = self.row_widgets[sid]
+        elapsed  = time.time() - self.start_times.get(sid, time.time())
+        # Use actual duration from previous run; fall back to stage estimate
+        stage    = next(s for s in STAGES if s["id"] == sid)
+        ref      = self.durations.get(sid) or stage["est_sec"]
+        remaining = max(0.0, ref - elapsed)
+        w        = self.row_widgets[sid]
 
-        if est and elapsed < est * 1.5:
-            remaining = est - elapsed
-            if remaining < 3:
-                text = "almost done…"
-            else:
-                text = f"~{self._fmt(remaining)} left"
+        if remaining < 4:
+            text = "almost done…"
         else:
-            text = f"{self._fmt(elapsed)} elapsed"
+            text = f"{self._fmt(remaining)} left"
 
         w["st_lbl"].configure(text=text, fg=ORANGE)
         self.after(1000, lambda s=sid: self._tick(s))
