@@ -321,16 +321,23 @@ class PipelineRunner(tk.Tk):
             return
         t0      = self.start_times.get(sid, time.time())
         elapsed = time.time() - t0
-        stage   = next(s for s in STAGES if s["id"] == sid)
-        # Best estimate: actual duration from last run, else hardcoded est_sec
-        ref       = self.durations.get(sid) or stage["est_sec"]
-        remaining = max(0.0, ref - elapsed)
-        w         = self.row_widgets[sid]
+        t_first = self.first_line_time.get(sid)   # when first line arrived THIS run
+        n_prev  = self.line_counts.get(sid)        # line count from PREVIOUS run
+        w       = self.row_widgets[sid]
 
-        if remaining < 4:
-            text = f"{self._fmt(elapsed)} elapsed…"
-        else:
-            text = f"{self._fmt(remaining)} left"
+        text = f"{self._fmt(elapsed)} elapsed"     # default: show elapsed
+
+        if t_first is not None and n_prev:
+            # Formula: time-to-first-line × total lines = estimated total
+            t_per_line = t_first - t0
+            estimated  = t_per_line * n_prev
+            remaining  = max(0.0, estimated - elapsed)
+
+            if estimated >= 5:                     # ignore if estimate is too tiny
+                if remaining >= 3:
+                    text = f"{self._fmt(remaining)} left"
+                else:
+                    text = f"{self._fmt(elapsed)} elapsed…"
 
         w["st_lbl"].configure(text=text, fg=ORANGE)
         self.after(1000, lambda s=sid: self._tick(s))
