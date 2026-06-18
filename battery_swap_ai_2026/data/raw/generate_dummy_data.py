@@ -4,7 +4,7 @@ generate_dummy_data.py
 Generates realistic dummy data for Norwegian IoT battery sensors.
 Produces three CSV files in data/raw/:
   - sensor_readings.csv  : per-day voltage/temperature readings per sensor
-  - buildings.csv        : 20 Norwegian buildings with GPS coordinates
+  - buildings.csv        : 50 Norwegian buildings across 6 cities
   - travel_times.csv     : full travel-time matrix between all buildings
 """
 
@@ -22,19 +22,36 @@ OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 # ──────────────────────────────────────────────
 
 CITIES = {
-    "Oslo":      {"n": 8, "lat": (59.8, 60.0), "lon": (10.6, 10.9)},
-    "Bergen":    {"n": 4, "lat": (60.3, 60.5), "lon": (5.2,  5.4)},
-    "Trondheim": {"n": 4, "lat": (63.3, 63.5), "lon": (10.3, 10.5)},
-    "Stavanger": {"n": 4, "lat": (58.9, 59.1), "lon": (5.6,  5.8)},
+    "Oslo":         {"n": 20, "lat": (59.8, 60.0), "lon": (10.6, 10.9)},
+    "Bergen":       {"n": 10, "lat": (60.3, 60.5), "lon": (5.2,  5.4)},
+    "Trondheim":    {"n": 10, "lat": (63.3, 63.5), "lon": (10.3, 10.5)},
+    "Stavanger":    {"n": 10, "lat": (58.9, 59.1), "lon": (5.6,  5.8)},
+    "Tromsø":       {"n":  5, "lat": (69.6, 69.7), "lon": (18.9, 19.1)},
+    "Kristiansand": {"n":  5, "lat": (58.1, 58.2), "lon": (7.9,  8.1)},
 }
 
 BUILDING_TYPES = ["office", "hospital", "warehouse"]
 
 BUILDING_NAME_PARTS = {
-    "Oslo":      ["Sentrum", "Øst", "Vest", "Nord", "Syd", "Aker", "Grünerløkka", "Frogner"],
-    "Bergen":    ["Bryggen", "Sandviken", "Laksevåg", "Åsane"],
-    "Trondheim": ["Midtbyen", "Nidarvoll", "Lade", "Heimdal"],
-    "Stavanger": ["Våland", "Hillevåg", "Storhaug", "Eiganes"],
+    "Oslo": [
+        "Sentrum", "Øst", "Vest", "Nord", "Syd", "Aker", "Grünerløkka", "Frogner",
+        "Majorstuen", "Sagene", "Bjørvika", "Holmenkollen", "Ullevål", "Tøyen",
+        "Torshov", "Ryen", "Lambertseter", "Grorud", "Stovner", "Furuset",
+    ],
+    "Bergen": [
+        "Bryggen", "Sandviken", "Laksevåg", "Åsane", "Fyllingsdalen",
+        "Ytrebygda", "Bergenhus", "Fana", "Arna", "Loddefjord",
+    ],
+    "Trondheim": [
+        "Midtbyen", "Nidarvoll", "Lade", "Heimdal", "Lerkendal",
+        "Tiller", "Ranheim", "Saupstad", "Byåsen", "Singsaker",
+    ],
+    "Stavanger": [
+        "Våland", "Hillevåg", "Storhaug", "Eiganes", "Madla",
+        "Hundvåg", "Hinna", "Tasta", "Sentrum", "Mariero",
+    ],
+    "Tromsø": ["Sentrum", "Tromsøya", "Tromsdalen", "Langnes", "Mortensnes"],
+    "Kristiansand": ["Sentrum", "Lund", "Kvadraturen", "Vågsbygd", "Randesund"],
 }
 
 
@@ -104,8 +121,8 @@ def generate_travel_times(buildings: pd.DataFrame) -> pd.DataFrame:
 # 3. SENSOR READINGS
 # ──────────────────────────────────────────────
 
-N_SENSORS    = 50
-N_DEAD       = int(N_SENSORS * 0.30)   # exactly 15 sensors die
+N_SENSORS    = 500
+N_DEAD       = int(N_SENSORS * 0.30)   # 150 sensors die
 DEAD_THRESH  = 2.5
 WINTER_MONTHS = {12, 1, 2, 3}
 
