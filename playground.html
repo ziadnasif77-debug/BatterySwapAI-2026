@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BatterySwapAI — ML Playground</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#0d1117;color:#e6edf3;font:13px/1.4 'Segoe UI',system-ui,sans-serif}
+#root{display:grid;grid-template-columns:252px 1fr 1fr;grid-template-rows:52px 1fr 210px;height:100vh;gap:1px;background:#21262d}
+#hdr{grid-column:1/-1;background:#161b22;display:flex;align-items:center;padding:0 18px;gap:12px;border-bottom:1px solid #30363d}
+#hdr h1{font-size:14px;font-weight:700}
+#hdr p{font-size:11px;color:#8b949e}
+#ctrl{grid-row:2/4;background:#0d1117;padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+#sp{grid-column:2/4;background:#0d1117;padding:10px}
+#lp{background:#0d1117;padding:10px}
+#wp{background:#0d1117;padding:10px}
+canvas{display:block}
+.pt{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#8b949e;margin-bottom:5px}
+.cg{display:flex;flex-direction:column;gap:3px}
+.cg label{font-size:11px;color:#8b949e;display:flex;justify-content:space-between}
+.cg label span{color:#e6edf3;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:#388bfd;cursor:pointer}
+.br{display:flex;gap:6px}
+.btn{flex:1;padding:7px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:filter .15s}
+.btn:hover:not(:disabled){filter:brightness(1.15)}
+.btn:disabled{opacity:.4;cursor:default}
+.go{background:#238636;color:#fff}
+.stop{background:#da3633;color:#fff}
+.reset{background:#21262d;color:#e6edf3;border:1px solid #30363d}
+.stats{border:1px solid #21262d;border-radius:6px;overflow:hidden}
+.sr{display:flex;justify-content:space-between;padding:5px 9px;font-size:11px;border-bottom:1px solid #21262d}
+.sr:last-child{border-bottom:none}
+.sv{color:#3fb950;font-weight:600;font-variant-numeric:tabular-nums}
+.fl{display:flex;flex-direction:column;gap:4px}
+.fr{display:flex;align-items:center;gap:7px;font-size:11px;cursor:pointer}
+.fr input{accent-color:#388bfd;width:13px;height:13px;cursor:pointer}
+.fc{display:inline-block;width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.leg{display:flex;gap:8px;font-size:10px;color:#8b949e;flex-wrap:wrap;margin-bottom:4px}
+.li{display:flex;align-items:center;gap:3px}
+.ld{width:8px;height:8px;border-radius:50%}
+#pb{height:3px;background:#21262d;border-radius:2px;overflow:hidden}
+#pf{height:100%;background:#388bfd;width:0;transition:width .12s}
+</style>
+</head>
+<body>
+<div id="root">
+
+<div id="hdr">
+  <span style="font-size:21px">🔋</span>
+  <div>
+    <h1>BatterySwapAI 2026 — ML Playground</h1>
+    <p>Interactive gradient descent · predict battery Remaining Useful Life (RUL) · inspired by TensorFlow Playground</p>
+  </div>
+</div>
+
+<div id="ctrl">
+  <div class="br">
+    <button class="btn go"    id="tb" onclick="toggleTrain()">▶  Train</button>
+    <button class="btn reset"         onclick="newDataset()">↺  New Data</button>
+  </div>
+  <div id="pb"><div id="pf"></div></div>
+
+  <div class="stats">
+    <div class="sr"><span>Step</span>    <span class="sv" id="s-step">—</span></div>
+    <div class="sr"><span>MAE</span>     <span class="sv" id="s-mae">—</span></div>
+    <div class="sr"><span>Best MAE</span><span class="sv" id="s-best">—</span></div>
+    <div class="sr"><span>R²</span>      <span class="sv" id="s-r2">—</span></div>
+  </div>
+
+  <div class="cg">
+    <label>Batteries <span id="lv-n">150</span></label>
+    <input type="range" id="sl-n" min="40" max="500" value="150" step="10"
+           oninput="lv('n',this.value);newDataset()">
+  </div>
+  <div class="cg">
+    <label>Noise <span id="lv-ns">0.30</span></label>
+    <input type="range" id="sl-ns" min="0" max="1" value="0.30" step="0.05"
+           oninput="lv('ns',(+this.value).toFixed(2));newDataset()">
+  </div>
+  <div class="cg">
+    <label>Learning rate <span id="lv-lr">0.030</span></label>
+    <input type="range" id="sl-lr" min="0.001" max="0.15" value="0.03" step="0.001"
+           oninput="lv('lr',(+this.value).toFixed(3))">
+  </div>
+  <div class="cg">
+    <label>Steps <span id="lv-st">400</span></label>
+    <input type="range" id="sl-st" min="50" max="2000" value="400" step="50"
+           oninput="lv('st',this.value)">
+  </div>
+  <div class="cg">
+    <label>Speed <span id="lv-sp">8</span> steps/frame</label>
+    <input type="range" id="sl-sp" min="1" max="50" value="8"
+           oninput="lv('sp',this.value)">
+  </div>
+
+  <div>
+    <div class="pt" style="margin-bottom:6px">Features</div>
+    <div class="fl">
+      <label class="fr"><input type="checkbox" id="f0" checked onchange="rebuild()"><span class="fc" style="background:#58a6ff"></span>Voltage (V)</label>
+      <label class="fr"><input type="checkbox" id="f1" checked onchange="rebuild()"><span class="fc" style="background:#3fb950"></span>7-day Slope</label>
+      <label class="fr"><input type="checkbox" id="f2" checked onchange="rebuild()"><span class="fc" style="background:#f0883e"></span>7-day Variance</label>
+      <label class="fr"><input type="checkbox" id="f3" checked onchange="rebuild()"><span class="fc" style="background:#a371f7"></span>Days Elapsed</label>
+      <label class="fr"><input type="checkbox" id="f4"         onchange="rebuild()"><span class="fc" style="background:#f85149"></span>Voltage²</label>
+    </div>
+  </div>
+</div>
+
+<!-- scatter -->
+<div id="sp">
+  <div class="pt">Predicted RUL vs True RUL (days) — perfect model = diagonal line</div>
+  <div class="leg">
+    <div class="li"><div class="ld" style="background:#f85149"></div>Dead ≤3d</div>
+    <div class="li"><div class="ld" style="background:#f0883e"></div>Critical ≤7d</div>
+    <div class="li"><div class="ld" style="background:#e3b341"></div>Warning ≤14d</div>
+    <div class="li"><div class="ld" style="background:#3fb950"></div>Safe &gt;14d</div>
+  </div>
+  <canvas id="cs"></canvas>
+</div>
+
+<!-- loss -->
+<div id="lp">
+  <div class="pt">Training Loss — MAE (days)</div>
+  <canvas id="cl"></canvas>
+</div>
+
+<!-- weights -->
+<div id="wp">
+  <div class="pt">Feature Weights</div>
+  <canvas id="cw"></canvas>
+</div>
+
+</div><!-- #root -->
+
+<script>
+// ── RNG ──────────────────────────────────────────────────────────────────────
+const rng32 = s => {
+  let x = s | 0;
+  return () => {
+    x = x + 0x6D2B79F5 | 0;
+    let t = Math.imul(x ^ x >>> 15, x | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+};
+
+// ── DATA GENERATION ───────────────────────────────────────────────────────────
+const FN  = ['Voltage','Slope','Variance','Days','Volt²'];
+const FC  = ['#58a6ff','#3fb950','#f0883e','#a371f7','#f85149'];
+
+let bats = [], seed = 42, fMn = [], fMx = [], rulAvg = 0;
+
+function genData() {
+  const n   = +document.getElementById('sl-n').value;
+  const nz  = +document.getElementById('sl-ns').value;
+  const rng = rng32(seed);
+  bats = [];
+
+  for (let i = 0; i < n; i++) {
+    const V0  = 3.8 + rng() * 0.4;
+    const dc  = 0.003 + rng() * 0.015;
+    const nd  = 60 + Math.floor(rng() * 320);
+    const rd  = [];
+    for (let d = 0; d < nd; d++) {
+      const v = V0 * Math.exp(-dc * d) + (rng() - 0.5) * nz * 0.18;
+      rd.push(Math.max(0.05, v));
+      if (v <= 2.5) break;
+    }
+    const obs = Math.max(10, Math.min(Math.floor(rd.length * (0.35 + rng() * 0.5)), rd.length - 1));
+    const win = rd.slice(Math.max(0, obs - 7), obs + 1);
+    const mn  = win.reduce((a, b) => a + b, 0) / win.length;
+    const sl  = win.length > 1 ? (win[win.length-1] - win[0]) / win.length : 0;
+    const vr  = win.reduce((a, v) => a + (v - mn) ** 2, 0) / win.length;
+    bats.push({
+      voltage: rd[obs], slope: sl, variance: vr, days: obs,
+      trueRul: Math.min(Math.max(1, rd.length - obs), 200),
+      readings: rd, obs,
+    });
+  }
+
+  // feature range for normalization
+  const nf = 5;
+  fMn = Array(nf).fill(Infinity);
+  fMx = Array(nf).fill(-Infinity);
+  bats.forEach(b => feat(b).forEach((v, i) => {
+    if (v < fMn[i]) fMn[i] = v;
+    if (v > fMx[i]) fMx[i] = v;
+  }));
+  for (let i = 0; i < nf; i++) if (fMx[i] === fMn[i]) fMx[i] = fMn[i] + 1;
+  rulAvg = bats.reduce((s, b) => s + b.trueRul, 0) / bats.length;
+}
+
+function feat(b) {
+  return [b.voltage, b.slope, b.variance, b.days, b.voltage ** 2];
+}
+function normFeat(b) {
+  return feat(b).map((v, i) => (v - fMn[i]) / (fMx[i] - fMn[i]));
+}
+function activeIdx() {
+  return [0,1,2,3,4].filter(i => document.getElementById('f'+i).checked);
+}
+
+// ── MODEL ─────────────────────────────────────────────────────────────────────
+let mW = [], mB = 0, lossH = [], bestMAE = Infinity;
+
+function initModel() {
+  mW = activeIdx().map(() => 0);
+  mB = rulAvg;
+  lossH = []; bestMAE = Infinity;
+}
+
+function pred(b) {
+  const nf  = normFeat(b);
+  const idx = activeIdx();
+  let out = mB;
+  idx.forEach((fi, wi) => out += mW[wi] * nf[fi]);
+  return Math.max(0, out);
+}
+
+function trainStep(lr) {
+  const n   = bats.length;
+  const idx = activeIdx();
+  const err = bats.map(b => pred(b) - b.trueRul);
+  const mae = err.reduce((s, e) => s + Math.abs(e), 0) / n;
+  mB -= lr * err.reduce((s, e) => s + e, 0) / n;
+  idx.forEach((fi, wi) => {
+    const g = bats.reduce((s, b, i) => s + err[i] * normFeat(b)[fi], 0) / n;
+    mW[wi] -= lr * g;
+  });
+  return mae;
+}
+
+function computeR2() {
+  const mean = bats.reduce((s, b) => s + b.trueRul, 0) / bats.length;
+  const ss_tot = bats.reduce((s, b) => s + (b.trueRul - mean) ** 2, 0);
+  const ss_res = bats.reduce((s, b) => s + (b.trueRul - pred(b)) ** 2, 0);
+  return ss_tot === 0 ? 0 : 1 - ss_res / ss_tot;
+}
+
+// ── CANVAS HELPERS ────────────────────────────────────────────────────────────
+const DPR = window.devicePixelRatio || 1;
+
+function getCtx(canvasId, paneId, hdrPx) {
+  const cv = document.getElementById(canvasId);
+  const pn = document.getElementById(paneId);
+  const W  = pn.clientWidth  - 20;
+  const H  = Math.max(40, pn.clientHeight - hdrPx);
+  cv.style.width  = W + 'px';
+  cv.style.height = H + 'px';
+  cv.width  = W * DPR;
+  cv.height = H * DPR;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  return [W, H, ctx];
+}
+
+function rul2col(r) {
+  return r <= 3 ? '#f85149' : r <= 7 ? '#f0883e' : r <= 14 ? '#e3b341' : '#3fb950';
+}
+
+// ── DRAW SCATTER ──────────────────────────────────────────────────────────────
+function drawScatter() {
+  const [W, H, ctx] = getCtx('cs', 'sp', 56);
+  const P = {l:42, r:10, t:6, b:38};
+  const cw = W - P.l - P.r, ch = H - P.t - P.b;
+  const MAX = 200;
+  const sx  = x => P.l + (x / MAX) * cw;
+  const sy  = y => P.t + ch - (Math.min(y, MAX) / MAX) * ch;
+
+  ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, W, H);
+
+  // grid
+  ctx.strokeStyle = '#161b22'; ctx.lineWidth = 1;
+  [0,50,100,150,200].forEach(v => {
+    ctx.beginPath(); ctx.moveTo(sx(v), P.t); ctx.lineTo(sx(v), P.t+ch); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(P.l, sy(v)); ctx.lineTo(P.l+cw, sy(v)); ctx.stroke();
+    ctx.fillStyle='#484f58'; ctx.font='10px Segoe UI'; ctx.textAlign='center';
+    ctx.fillText(v, sx(v), P.t+ch+14);
+    if(v>0){ctx.textAlign='right'; ctx.fillText(v, P.l-4, sy(v)+4);}
+  });
+
+  // ±20d confidence band
+  ctx.beginPath();
+  ctx.moveTo(sx(0),  sy(20)); ctx.lineTo(sx(180), sy(200));
+  ctx.lineTo(sx(200),sy(200)); ctx.lineTo(sx(200), sy(180));
+  ctx.lineTo(sx(20), sy(0));  ctx.lineTo(sx(0),   sy(0));
+  ctx.closePath(); ctx.fillStyle='#3fb95018'; ctx.fill();
+
+  // diagonal
+  ctx.strokeStyle='#484f58'; ctx.lineWidth=1.5; ctx.setLineDash([5,5]);
+  ctx.beginPath(); ctx.moveTo(sx(0),sy(0)); ctx.lineTo(sx(200),sy(200)); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // axis labels
+  ctx.fillStyle='#8b949e'; ctx.font='11px Segoe UI'; ctx.textAlign='center';
+  ctx.fillText('True RUL (days)', P.l+cw/2, H-4);
+  ctx.save(); ctx.translate(12, P.t+ch/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Predicted RUL (days)', 0, 0); ctx.restore();
+
+  // points
+  bats.forEach(b => {
+    ctx.beginPath();
+    ctx.arc(sx(b.trueRul), sy(pred(b)), 3.5, 0, 2*Math.PI);
+    ctx.fillStyle = rul2col(b.trueRul) + 'bb';
+    ctx.fill();
+  });
+}
+
+// ── DRAW LOSS ─────────────────────────────────────────────────────────────────
+function drawLoss() {
+  const [W, H, ctx] = getCtx('cl', 'lp', 28);
+  const P = {l:42, r:10, t:6, b:28};
+  const cw = W-P.l-P.r, ch = H-P.t-P.b;
+
+  ctx.fillStyle='#0d1117'; ctx.fillRect(0,0,W,H);
+
+  if (lossH.length < 2) {
+    ctx.fillStyle='#484f58'; ctx.font='12px Segoe UI'; ctx.textAlign='center';
+    ctx.fillText('Press ▶ Train to start', W/2, H/2);
+    return;
+  }
+
+  const maxL = Math.max(...lossH) * 1.05;
+  const sx   = i => P.l + (i / (lossH.length-1)) * cw;
+  const sy   = v => P.t + ch - (v/maxL)*ch;
+
+  ctx.strokeStyle='#21262d'; ctx.lineWidth=1;
+  [0,.25,.5,.75,1].forEach(f => {
+    const y = sy(maxL*f);
+    ctx.beginPath(); ctx.moveTo(P.l,y); ctx.lineTo(P.l+cw,y); ctx.stroke();
+    ctx.fillStyle='#484f58'; ctx.font='9px Segoe UI'; ctx.textAlign='right';
+    ctx.fillText(Math.round(maxL*f), P.l-4, y+3);
+  });
+
+  // area
+  ctx.beginPath();
+  lossH.forEach((v,i) => i===0 ? ctx.moveTo(sx(i),sy(v)) : ctx.lineTo(sx(i),sy(v)));
+  ctx.lineTo(sx(lossH.length-1), P.t+ch);
+  ctx.lineTo(P.l, P.t+ch); ctx.closePath();
+  ctx.fillStyle='#388bfd1a'; ctx.fill();
+
+  // line
+  ctx.strokeStyle='#388bfd'; ctx.lineWidth=2;
+  ctx.beginPath();
+  lossH.forEach((v,i) => i===0 ? ctx.moveTo(sx(i),sy(v)) : ctx.lineTo(sx(i),sy(v)));
+  ctx.stroke();
+
+  // dot
+  const li = lossH.length-1;
+  ctx.beginPath(); ctx.arc(sx(li),sy(lossH[li]),4,0,2*Math.PI);
+  ctx.fillStyle='#388bfd'; ctx.fill();
+
+  ctx.fillStyle='#8b949e'; ctx.font='10px Segoe UI'; ctx.textAlign='center';
+  ctx.fillText('Training step', P.l+cw/2, H-2);
+}
+
+// ── DRAW WEIGHTS ──────────────────────────────────────────────────────────────
+function drawWeights() {
+  const [W, H, ctx] = getCtx('cw', 'wp', 28);
+  ctx.fillStyle='#0d1117'; ctx.fillRect(0,0,W,H);
+
+  const idx = activeIdx();
+  if (!idx.length) return;
+
+  const midX  = W / 2;
+  const barH  = Math.min(24, (H-40) / idx.length - 6);
+  const topY  = (H - idx.length*(barH+8)) / 2;
+  const maxAbs= Math.max(...mW.map(Math.abs), 0.01);
+  const scB   = v => (Math.abs(v)/maxAbs) * (midX-85);
+
+  ctx.strokeStyle='#30363d'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(midX,6); ctx.lineTo(midX,H-10); ctx.stroke();
+
+  ctx.fillStyle='#3fb950'; ctx.font='10px Segoe UI'; ctx.textAlign='left';
+  ctx.fillText('→ longer RUL', midX+4, 14);
+  ctx.fillStyle='#f85149'; ctx.textAlign='right';
+  ctx.fillText('shorter RUL ←', midX-4, 14);
+
+  idx.forEach((fi, wi) => {
+    const y  = topY + 24 + wi*(barH+8);
+    const w  = mW[wi] || 0;
+    const bw = scB(w);
+
+    ctx.fillStyle='#8b949e'; ctx.font='11px Segoe UI'; ctx.textAlign='right';
+    ctx.fillText(FN[fi], midX-6, y+barH*.72);
+
+    ctx.fillStyle = FC[fi] + 'cc';
+    if (w > 0) ctx.fillRect(midX+2, y, bw, barH);
+    else       ctx.fillRect(midX-bw-2, y, bw, barH);
+
+    ctx.fillStyle='#e6edf3'; ctx.font='10px Consolas';
+    if (w > 0){ ctx.textAlign='left';  ctx.fillText(w.toFixed(2), midX+bw+5, y+barH*.72); }
+    else      { ctx.textAlign='right'; ctx.fillText(w.toFixed(2), midX-bw-4, y+barH*.72); }
+  });
+}
+
+function drawAll() { drawScatter(); drawLoss(); drawWeights(); }
+
+// ── TRAIN LOOP ────────────────────────────────────────────────────────────────
+let raf = null, step = 0, maxS = 0;
+
+function toggleTrain() {
+  raf ? stopTrain() : startTrain();
+}
+function startTrain() {
+  initModel(); step=0; maxS=+document.getElementById('sl-st').value;
+  const tb = document.getElementById('tb');
+  tb.textContent='⏹  Stop'; tb.className='btn stop';
+  loop();
+}
+function stopTrain() {
+  if(raf){cancelAnimationFrame(raf);raf=null;}
+  const tb=document.getElementById('tb');
+  tb.textContent='▶  Train'; tb.className='btn go';
+}
+function loop() {
+  const lr  = +document.getElementById('sl-lr').value;
+  const spd = +document.getElementById('sl-sp').value;
+  for(let i=0;i<spd;i++){
+    if(step>=maxS){stopTrain();document.getElementById('pf').style.width='100%';return;}
+    const mae=trainStep(lr);
+    lossH.push(mae);
+    if(mae<bestMAE) bestMAE=mae;
+    step++;
+  }
+  const r2 = computeR2();
+  document.getElementById('s-step').textContent = step+' / '+maxS;
+  document.getElementById('s-mae').textContent  = lossH.at(-1).toFixed(1)+' d';
+  document.getElementById('s-best').textContent = bestMAE.toFixed(1)+' d';
+  document.getElementById('s-r2').textContent   = r2.toFixed(3);
+  document.getElementById('pf').style.width     = (step/maxS*100)+'%';
+  drawAll();
+  raf=requestAnimationFrame(loop);
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function lv(k,v){ document.getElementById('lv-'+k).textContent=v; }
+
+function newDataset() {
+  stopTrain();
+  seed=Math.floor(Math.random()*99999);
+  genData(); initModel();
+  document.getElementById('pf').style.width='0%';
+  ['s-step','s-mae','s-best','s-r2'].forEach(id=>document.getElementById(id).textContent='—');
+  drawAll();
+}
+function rebuild() { stopTrain(); initModel(); drawAll(); }
+
+window.addEventListener('resize', drawAll);
+genData(); initModel(); drawAll();
+</script>
+</body>
+</html>
