@@ -6,11 +6,13 @@ Usage:
     python runner.py
 """
 
+import importlib.util
 import os
 import subprocess
 import sys
 import threading
 import time
+import webbrowser
 from pathlib import Path
 from queue import Empty, Queue
 import tkinter as tk
@@ -154,6 +156,15 @@ class PipelineRunner(tk.Tk):
             command=self._reset_all,
         )
         self.reset_btn.pack(side="left")
+
+        self.dash_btn = tk.Button(
+            btn_bar, text="📊  Open Dashboard",
+            bg=BG2, fg="#3498db", font=("Segoe UI", 10),
+            relief="flat", padx=14, pady=6, cursor="hand2",
+            activebackground=BORDER, activeforeground="#3498db",
+            command=self._open_dashboard,
+        )
+        self.dash_btn.pack(side="left", padx=(8, 0))
 
         tk.Frame(self, bg=BORDER, height=1).pack(fill="x", pady=8)
 
@@ -399,6 +410,34 @@ class PipelineRunner(tk.Tk):
                 self.after(150, lambda: self._run_stage(
                     STAGES[idx + 1], auto_next=True
                 ))
+            else:
+                # All stages complete — auto-open dashboard
+                self._append("\n✅  All stages complete — opening dashboard…\n")
+                self.after(800, self._open_dashboard)
+
+    def _open_dashboard(self):
+        """Regenerate dashboard.html from current data and open in browser."""
+        self.dash_btn.configure(text="⏳ Generating…", state="disabled")
+
+        def _worker():
+            try:
+                spec = importlib.util.spec_from_file_location(
+                    "generate_dashboard",
+                    str(REPO_ROOT / "generate_dashboard.py"),
+                )
+                mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(mod)
+                path = mod.generate(run_meta=self.durations)
+                webbrowser.open(path.as_uri())
+                self.after(0, lambda: self.dash_btn.configure(
+                    text="📊  Open Dashboard", state="normal"))
+            except Exception as exc:
+                self.after(0, lambda: (
+                    self._append(f"\n[Dashboard Error] {exc}\n"),
+                    self.dash_btn.configure(text="📊  Open Dashboard", state="normal"),
+                ))
+
+        threading.Thread(target=_worker, daemon=True).start()
 
     def _run_all(self):
         for stage in STAGES:
