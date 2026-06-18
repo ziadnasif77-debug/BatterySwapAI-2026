@@ -6,6 +6,7 @@ Usage:
     python runner.py
 """
 
+import os
 import subprocess
 import sys
 import threading
@@ -178,6 +179,14 @@ class PipelineRunner(tk.Tk):
             command=self._clear_output,
         ).pack(side="right")
 
+        self.copy_btn = tk.Button(
+            out_hdr, text="Copy Output", bg=BG2, fg=TEXT,
+            font=("Segoe UI", 8), relief="flat", padx=8, cursor="hand2",
+            activebackground=BORDER, activeforeground=TEXT,
+            command=self._copy_output,
+        )
+        self.copy_btn.pack(side="right", padx=(0, 6))
+
         self.out = scrolledtext.ScrolledText(
             self, height=9, bg=BG2, fg=TEXT,
             font=("Consolas", 9), relief="flat",
@@ -278,10 +287,12 @@ class PipelineRunner(tk.Tk):
         self._append(f"\n{'─'*60}\n▶  {stage['label']}\n{'─'*60}\n")
 
         def _worker():
+            env = os.environ.copy()
+            env["PYTHONIOENCODING"] = "utf-8"
             result = subprocess.run(
                 stage["cmd"],
-                capture_output=True, text=True,
-                cwd=str(REPO_ROOT),
+                capture_output=True, text=True, encoding="utf-8",
+                cwd=str(REPO_ROOT), env=env,
             )
             output = (result.stdout + result.stderr).strip()
             self.states[sid] = "done" if result.returncode == 0 else "error"
@@ -322,6 +333,16 @@ class PipelineRunner(tk.Tk):
         self.out.insert("end", text)
         self.out.see("end")
         self.out.configure(state="disabled")
+
+    def _copy_output(self):
+        text = self.out.get("1.0", "end").strip()
+        if text:
+            self.clipboard_clear()
+            self.clipboard_append(text)
+            self.copy_btn.configure(text="Copied ✓", bg=GREEN, fg="white")
+            self.after(2000, lambda: self.copy_btn.configure(
+                text="Copy Output", bg=BG2, fg=TEXT
+            ))
 
     def _clear_output(self):
         self.out.configure(state="normal")
