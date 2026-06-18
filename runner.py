@@ -10,6 +10,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 import tkinter as tk
 from tkinter import scrolledtext
@@ -102,6 +103,8 @@ class PipelineRunner(tk.Tk):
 
         self.states      = {s["id"]: "idle" for s in STAGES}
         self.row_widgets = {}
+        self.start_times = {}   # sid -> time.time() when started
+        self.durations   = {}   # sid -> last known duration (seconds)
 
         self._build_ui()
         self._refresh()
@@ -216,7 +219,7 @@ class PipelineRunner(tk.Tk):
                  font=("Segoe UI", 9), anchor="w").pack(fill="x")
 
         st_lbl = tk.Label(row, text="Not run", bg=BG2, fg=GRAY,
-                          font=("Segoe UI", 9), width=11, anchor="e")
+                          font=("Segoe UI", 9), width=14, anchor="e")
         st_lbl.pack(side="right", padx=(6, 8))
 
         btn = tk.Button(
@@ -246,10 +249,6 @@ class PipelineRunner(tk.Tk):
         self.reset_btn.configure(state="disabled" if any_running else "normal")
 
         COLOR = {"idle": GRAY, "running": ORANGE, "done": GREEN, "error": RED}
-        LABEL = {
-            "idle": "Not run", "running": "Running…",
-            "done": "Done ✓",  "error":   "Failed ✗",
-        }
 
         for i, stage in enumerate(STAGES):
             sid      = stage["id"]
@@ -260,7 +259,23 @@ class PipelineRunner(tk.Tk):
 
             w["dot_cv"].itemconfig(w["dot"], fill=c)
             w["row"].configure(highlightbackground=c)
-            w["st_lbl"].configure(text=LABEL[status], fg=c)
+
+            # Status label — _tick() owns it while running
+            if status == "idle":
+                w["st_lbl"].configure(text="Not run", fg=GRAY)
+            elif status == "done":
+                dur = self.durations.get(sid, 0)
+                w["st_lbl"].configure(
+                    text=f"Done ✓  {self._fmt(dur)}" if dur else "Done ✓",
+                    fg=GREEN,
+                )
+            elif status == "error":
+                dur = self.durations.get(sid, 0)
+                w["st_lbl"].configure(
+                    text=f"Failed ✗  {self._fmt(dur)}" if dur else "Failed ✗",
+                    fg=RED,
+                )
+            # "running" label is managed by _tick — don't overwrite it here
 
             if status == "running":
                 w["btn"].configure(text="⏳ Running…", state="disabled",
@@ -280,10 +295,37 @@ class PipelineRunner(tk.Tk):
 
     # ── Stage execution ────────────────────────────────────────────────────────
 
+    def _fmt(self, seconds):
+        seconds = int(seconds)
+        if seconds < 60:
+            return f"{seconds}s"
+        return f"{seconds // 60}m {seconds % 60:02d}s"
+
+    def _tick(self, sid):
+        if self.states[sid] != "running":
+            return
+        elapsed = time.time() - self.start_times.get(sid, time.time())
+        est     = self.durations.get(sid)
+        w       = self.row_widgets[sid]
+
+        if est and elapsed < est * 1.5:
+            remaining = est - elapsed
+            if remaining < 3:
+                text = "almost done…"
+            else:
+                text = f"~{self._fmt(remaining)} left"
+        else:
+            text = f"{self._fmt(elapsed)} elapsed"
+
+        w["st_lbl"].configure(text=text, fg=ORANGE)
+        self.after(1000, lambda s=sid: self._tick(s))
+
     def _run_stage(self, stage, auto_next=False):
         sid = stage["id"]
         self.states[sid] = "running"
+        self.start_times[sid] = time.time()
         self._refresh()
+        self._tick(sid)
         self._append(f"\n{'─'*60}\n▶  {stage['label']}\n{'─'*60}\n")
 
         def _worker():
@@ -303,8 +345,11 @@ class PipelineRunner(tk.Tk):
         threading.Thread(target=_worker, daemon=True).start()
 
     def _stage_done(self, stage, rc, output, auto_next):
-        symbol = "✓" if rc == 0 else "✗"
-        self._append(f"{output}\n\n[Exit {rc}] {symbol}\n")
+        sid     = stage["id"]
+        elapsed = time.time() - self.start_times.get(sid, time.time())
+        self.durations[sid] = elapsed
+        symbol  = "✓" if rc == 0 else "✗"
+        self._append(f"{output}\n\n[Exit {rc}] {symbol}  ({self._fmt(elapsed)})\n")
         self._refresh()
 
         if auto_next and rc == 0:
