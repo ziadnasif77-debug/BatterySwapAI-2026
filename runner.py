@@ -12,6 +12,7 @@ import sys
 import threading
 import time
 from pathlib import Path
+from queue import Empty, Queue
 import tkinter as tk
 from tkinter import scrolledtext
 
@@ -111,13 +112,17 @@ class PipelineRunner(tk.Tk):
         self.geometry("860x740")
         self.minsize(700, 500)
 
-        self.states      = {s["id"]: "idle" for s in STAGES}
-        self.row_widgets = {}
-        self.start_times = {}   # sid -> time.time() when started
-        self.durations   = {}   # sid -> last known duration (seconds)
+        self.states          = {s["id"]: "idle" for s in STAGES}
+        self.row_widgets     = {}
+        self.start_times     = {}   # sid -> time.time() when started
+        self.durations       = {}   # sid -> last known duration (seconds)
+        self.line_counts     = {}   # sid -> total lines from last completed run
+        self.first_line_time = {}   # sid -> time when first output line arrived
+        self._out_queue      = Queue()
 
         self._build_ui()
         self._refresh()
+        self._poll_queue()
 
     # ── UI construction ────────────────────────────────────────────────────────
 
@@ -314,12 +319,22 @@ class PipelineRunner(tk.Tk):
     def _tick(self, sid):
         if self.states[sid] != "running":
             return
-        elapsed  = time.time() - self.start_times.get(sid, time.time())
-        # Use actual duration from previous run; fall back to stage estimate
-        stage    = next(s for s in STAGES if s["id"] == sid)
-        ref      = self.durations.get(sid) or stage["est_sec"]
-        remaining = max(0.0, ref - elapsed)
-        w        = self.row_widgets[sid]
+        t0      = self.start_times.get(sid, time.time())
+        elapsed = time.time() - t0
+        t_first = self.first_line_time.get(sid)
+        n_prev  = self.line_counts.get(sid)
+        w       = self.row_widgets[sid]
+
+        if t_first and n_prev:
+            # time-to-first-line × total lines from previous run = estimate
+            time_per_line   = t_first - t0
+            estimated_total = time_per_line * n_prev
+            remaining       = max(0.0, estimated_total - elapsed)
+        else:
+            # fallback: use stage estimate or previous duration
+            stage = next(s for s in STAGES if s["id"] == sid)
+            ref   = self.durations.get(sid) or stage["est_sec"]
+            remaining = max(0.0, ref - elapsed)
 
         if remaining < 4:
             text = "almost done…"
@@ -329,10 +344,21 @@ class PipelineRunner(tk.Tk):
         w["st_lbl"].configure(text=text, fg=ORANGE)
         self.after(1000, lambda s=sid: self._tick(s))
 
+    def _poll_queue(self):
+        """Drain the output queue on the main thread every 80 ms."""
+        try:
+            while True:
+                chunk = self._out_queue.get_nowait()
+                self._append(chunk)
+        except Empty:
+            pass
+        self.after(80, self._poll_queue)
+
     def _run_stage(self, stage, auto_next=False):
         sid = stage["id"]
-        self.states[sid] = "running"
-        self.start_times[sid] = time.time()
+        self.states[sid]          = "running"
+        self.start_times[sid]     = time.time()
+        self.first_line_time[sid] = None
         self._refresh()
         self._tick(sid)
         self._append(f"\n{'─'*60}\n▶  {stage['label']}\n{'─'*60}\n")
@@ -340,29 +366,37 @@ class PipelineRunner(tk.Tk):
         def _worker():
             env = os.environ.copy()
             env["PYTHONIOENCODING"] = "utf-8"
-            result = subprocess.run(
+            env["PYTHONUNBUFFERED"] = "1"
+            proc = subprocess.Popen(
                 stage["cmd"],
-                capture_output=True, text=True, encoding="utf-8",
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, encoding="utf-8",
                 cwd=str(REPO_ROOT), env=env,
             )
-            output = (result.stdout + result.stderr).strip()
-            self.states[sid] = "done" if result.returncode == 0 else "error"
-            self.after(0, lambda: self._stage_done(
-                stage, result.returncode, output, auto_next
-            ))
+            line_count = 0
+            for raw_line in proc.stdout:
+                if self.first_line_time.get(sid) is None:
+                    self.first_line_time[sid] = time.time()
+                line_count += 1
+                self._out_queue.put(raw_line)
+            proc.wait()
+            rc = proc.returncode
+            self.line_counts[sid] = line_count
+            elapsed = time.time() - self.start_times.get(sid, time.time())
+            self.durations[sid] = elapsed
+            self.states[sid] = "done" if rc == 0 else "error"
+            self.after(0, lambda: self._stage_done(stage, rc, elapsed, auto_next))
 
         threading.Thread(target=_worker, daemon=True).start()
 
-    def _stage_done(self, stage, rc, output, auto_next):
-        sid     = stage["id"]
-        elapsed = time.time() - self.start_times.get(sid, time.time())
-        self.durations[sid] = elapsed
-        symbol  = "✓" if rc == 0 else "✗"
-        self._append(f"{output}\n\n[Exit {rc}] {symbol}  ({self._fmt(elapsed)})\n")
+    def _stage_done(self, stage, rc, elapsed, auto_next):
+        sid    = stage["id"]
+        symbol = "✓" if rc == 0 else "✗"
+        self._append(f"\n[Exit {rc}] {symbol}  ({self._fmt(elapsed)})\n")
         self._refresh()
 
         if auto_next and rc == 0:
-            idx = next(i for i, s in enumerate(STAGES) if s["id"] == stage["id"])
+            idx = next(i for i, s in enumerate(STAGES) if s["id"] == sid)
             if idx + 1 < len(STAGES):
                 self.after(150, lambda: self._run_stage(
                     STAGES[idx + 1], auto_next=True
